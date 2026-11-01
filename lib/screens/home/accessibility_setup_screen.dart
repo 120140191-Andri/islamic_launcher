@@ -49,6 +49,10 @@ class _AccessibilitySetupScreenState extends State<AccessibilitySetupScreen>
   Future<void> _checkStatus() async {
     final appState = Provider.of<AppState>(context, listen: false);
     final enabled = await appState.appBlockService.isAccessibilityEnabled();
+    if (enabled && appState.isPassiveMode) {
+      await appState.enableStandardMode();
+      appState.refreshStatus();
+    }
     if (mounted && enabled != _isEnabled) {
       setState(() => _isEnabled = enabled);
     }

@@ -669,6 +669,174 @@ class _HomeScreenState extends State<HomeScreen>
                                         ),
                                       ),
 
+                                    // Passive Mode Banner (Switch back to Standard Mode)
+                                    if (appState.isPassiveMode)
+                                      Padding(
+                                        padding: const EdgeInsets.only(
+                                          bottom: 24,
+                                        ),
+                                        child: Container(
+                                          padding: const EdgeInsets.all(16),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFFFFBEB),
+                                            borderRadius: BorderRadius.circular(
+                                              20,
+                                            ),
+                                            border: Border.all(
+                                              color: Colors.amber.shade300,
+                                              width: 1.2,
+                                            ),
+                                          ),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Row(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Container(
+                                                    padding:
+                                                        const EdgeInsets.all(8),
+                                                    decoration: BoxDecoration(
+                                                      color:
+                                                          Colors.amber.shade100,
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            10,
+                                                          ),
+                                                    ),
+                                                    child: Icon(
+                                                      Icons.shield_outlined,
+                                                      color:
+                                                          Colors.amber.shade900,
+                                                      size: 20,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 12),
+                                                  Expanded(
+                                                    child: Column(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
+                                                      children: [
+                                                        Text(
+                                                          Translations.get(
+                                                            lang,
+                                                            'passive_mode_banner_title',
+                                                          ),
+                                                          style:
+                                                              const TextStyle(
+                                                                color: Color(
+                                                                  0xFF78350F,
+                                                                ),
+                                                                fontSize: 14,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold,
+                                                              ),
+                                                        ),
+                                                        const SizedBox(
+                                                          height: 4,
+                                                        ),
+                                                        Text(
+                                                          Translations.get(
+                                                            lang,
+                                                            'passive_mode_banner_desc',
+                                                          ),
+                                                          style:
+                                                              const TextStyle(
+                                                                color: Color(
+                                                                  0xFF92400E,
+                                                                ),
+                                                                fontSize: 12.5,
+                                                                height: 1.35,
+                                                              ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 12),
+                                              SizedBox(
+                                                width: double.infinity,
+                                                child: ElevatedButton.icon(
+                                                  onPressed: () async {
+                                                    final enabled =
+                                                        await appState
+                                                            .appBlockService
+                                                            .isAccessibilityEnabled();
+                                                    if (enabled) {
+                                                      await appState
+                                                          .enableStandardMode();
+                                                      appState.refreshStatus();
+                                                      return;
+                                                    }
+                                                    appState
+                                                        .setIgnorePermissionGuard(
+                                                          true,
+                                                        );
+                                                    appState
+                                                        .navigatorKey
+                                                        .currentState
+                                                        ?.push(
+                                                          AppPageRoute(
+                                                            child:
+                                                                const AccessibilitySetupScreen(),
+                                                          ),
+                                                        )
+                                                        .then((_) async {
+                                                          final nowEnabled =
+                                                              await appState
+                                                                  .appBlockService
+                                                                  .isAccessibilityEnabled();
+                                                          if (nowEnabled) {
+                                                            await appState
+                                                                .enableStandardMode();
+                                                          }
+                                                          appState
+                                                              .refreshStatus();
+                                                          appState
+                                                              .setIgnorePermissionGuard(
+                                                                false,
+                                                              );
+                                                        });
+                                                  },
+                                                  icon: const Icon(
+                                                    Icons.shield_rounded,
+                                                    size: 18,
+                                                  ),
+                                                  label: Text(
+                                                    Translations.get(
+                                                      lang,
+                                                      'switch_to_standard_mode_btn',
+                                                    ),
+                                                    style: const TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                  style: ElevatedButton.styleFrom(
+                                                    backgroundColor:
+                                                        const Color(0xFF0D5C3A),
+                                                    foregroundColor:
+                                                        Colors.white,
+                                                    elevation: 0,
+                                                    shape: RoundedRectangleBorder(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            12,
+                                                          ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+
                                     _SpiritualEnergyBeamWrapper(
                                       animation: _spiritualEnergyController,
                                       session: _activeEnergySession,

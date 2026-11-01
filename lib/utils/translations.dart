@@ -183,6 +183,10 @@ class Translations {
       'passive_mode_tradeoff':
           'Tanpa layanan Aksesibilitas, fitur pengunci aplikasi non-produktif, pengingat Ghadhul Bashar, serta filter konten dewasa & judi TIDAK AKAN BERFUNGSI.',
       'switch_to_passive_mode_btn': 'Pindah ke Mode Pasif',
+      'passive_mode_banner_title': 'Mode Pasif Aktif',
+      'passive_mode_banner_desc':
+          'Proteksi otomatis di luar launcher sedang nonaktif. Beralih ke Mode Standar untuk mengaktifkan kembali proteksi penuh.',
+      'switch_to_standard_mode_btn': 'Aktifkan Mode Standar',
       // Achievements & Streak
       'milestones_badges': 'Pencapaian & Lencana',
       'maqam_journey_guide': 'Panduan Tingkatan Maqam',
@@ -461,6 +465,10 @@ class Translations {
       'passive_mode_tradeoff':
           'Without Accessibility service, non-productive app locking, Ghadhul Bashar reminders, and adult/gambling content filters WILL NOT WORK.',
       'switch_to_passive_mode_btn': 'Switch to Passive Mode',
+      'passive_mode_banner_title': 'Passive Mode Active',
+      'passive_mode_banner_desc':
+          'Automatic protection outside the launcher is disabled. Switch to Standard Mode to re-enable full protection.',
+      'switch_to_standard_mode_btn': 'Enable Standard Mode',
       // Achievements & Streak
       'milestones_badges': 'Milestones & Badges',
       'maqam_journey_guide': 'Maqam Journey Guide',
@@ -739,6 +747,10 @@ class Translations {
       'passive_mode_tradeoff':
           'Tanpa perkhidmatan Kebolehcapaian, fungsi pengunci aplikasi tidak produktif, peringatan Ghadhul Bashar, serta penapis kandungan dewasa & judi TIDAK AKAN BERFUNGSI.',
       'switch_to_passive_mode_btn': 'Tukar ke Mod Pasif',
+      'passive_mode_banner_title': 'Mod Pasif Aktif',
+      'passive_mode_banner_desc':
+          'Perlindungan automatik di luar pelancar sedang dinyahaktifkan. Beralih ke Mod Standard untuk mengaktifkan semula perlindungan penuh.',
+      'switch_to_standard_mode_btn': 'Aktifkan Mod Standard',
       // Achievements & Streak
       'milestones_badges': 'Pencapaian & Lencana',
       'maqam_journey_guide': 'Panduan Peringkat Maqam',
@@ -1014,6 +1026,10 @@ class Translations {
       'passive_mode_tradeoff':
           'بدون خدمة إمكانية الوصول، لن تعمل ميزات قفل التطبيقات غير الإنتاجية، وتذكير غض البصر، وفلاتر المحتوى الإباحي والقمار.',
       'switch_to_passive_mode_btn': 'الانتقال إلى الوضع الخامل',
+      'passive_mode_banner_title': 'الوضع السلبي نشط',
+      'passive_mode_banner_desc':
+          'الحماية التلقائية خارج المشغل معطلة حالياً. انتقل إلى الوضع القياسي لإعادة تفعيل الحماية الكاملة.',
+      'switch_to_standard_mode_btn': 'تفعيل الوضع القياسي',
       // Achievements & Streak
       'milestones_badges': 'الإنجازات والشارات',
       'maqam_journey_guide': 'دليل رحلة المقامات',
@@ -1287,6 +1303,10 @@ class Translations {
       'passive_mode_tradeoff':
           'Sonder Toeganklikheidsdiens sal nie-produktiewe toepassingblokkering, Ghadhul Bashar-herinneringe en volwasse/dobbel-filters NIE WERK NIE.',
       'switch_to_passive_mode_btn': 'Skakel oor na Passiewe Modus',
+      'passive_mode_banner_title': 'Passiewe Modus Aktief',
+      'passive_mode_banner_desc':
+          'Outomatiese beskerming buite die lanseerder is gedeaktiveer. Skakel oor na Standaardmodus om volle beskerming weer te aktiveer.',
+      'switch_to_standard_mode_btn': 'Aktiveer Standaardmodus',
       // Achievements & Streak
       'milestones_badges': 'Mylpale & Kentekens',
       'maqam_journey_guide': 'Maqam-reis Gids',
@@ -1562,6 +1582,10 @@ class Translations {
       'passive_mode_tradeoff':
           'Bila huduma ya Ufikiaji, uzuiaji wa programu zisizo na tija, ukumbusho wa Ghadhul Bashar, na vichujio vya maudhui ya watu wazima/kamari HAVITAFANYA KAZI.',
       'switch_to_passive_mode_btn': 'Badilisha hadi Hali Tuli',
+      'passive_mode_banner_title': 'Hali Tulivu Inatumika',
+      'passive_mode_banner_desc':
+          'Ulinzi wa kiotomatiki nje ya kizindua umezimwa. Badili kwenda Hali ya Kawaida ili kuwezesha tena ulinzi kamili.',
+      'switch_to_standard_mode_btn': 'Washa Hali ya Kawaida',
       // Achievements & Streak
       'milestones_badges': 'Mafanikio & Alama',
       'maqam_journey_guide': 'Mwongozo wa Safari ya Maqam',
