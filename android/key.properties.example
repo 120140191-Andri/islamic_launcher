@@ -1,0 +1,11 @@
+# =============================================================================
+# KEYSTORE SIGNING CONFIGURATION (EXAMPLE)
+# =============================================================================
+# Salin file ini menjadi "key.properties" di dalam folder "android/"
+# File "key.properties" sudah di-ignore oleh Git agar rahasia kunci Anda aman.
+# =============================================================================
+storePassword=YOUR_STORE_PASSWORD
+keyPassword=YOUR_KEY_PASSWORD
+keyAlias=upload
+storeFile=upload-keystore.jks
+

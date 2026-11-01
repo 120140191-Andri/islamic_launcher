@@ -70,3 +70,8 @@ key.properties
 .env.*
 !.env.example
 
+# Local Secret Backups (NEVER commit to Git)
+backup/
+backup_keys/
+
+
