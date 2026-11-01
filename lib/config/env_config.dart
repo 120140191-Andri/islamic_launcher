@@ -24,6 +24,12 @@ class EnvConfig {
     defaultValue: 'ca-app-pub-3940256099942544/6300978111',
   );
 
+  // ── AdMob Native Ad Unit ID (Android) ──────────────────────────────────────
+  static const String admobNativeAdUnitId = String.fromEnvironment(
+    'ADMOB_NATIVE_AD_UNIT_ID',
+    defaultValue: 'ca-app-pub-3940256099942544/2247696110',
+  );
+
   /// Mengambil Rewarded Ad Unit ID (Khusus Android)
   static String get rewardedAdUnitId {
     if (Platform.isAndroid) {
@@ -36,6 +42,14 @@ class EnvConfig {
   static String get bannerAdUnitId {
     if (Platform.isAndroid) {
       return admobBannerAdUnitId;
+    }
+    return '';
+  }
+
+  /// Mengambil Native Ad Unit ID (Khusus Android)
+  static String get nativeAdUnitId {
+    if (Platform.isAndroid) {
+      return admobNativeAdUnitId;
     }
     return '';
   }

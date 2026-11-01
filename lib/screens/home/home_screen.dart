@@ -1,4 +1,7 @@
 import 'dart:async';
+import 'dart:io';
+import 'package:google_mobile_ads/google_mobile_ads.dart' hide AppState;
+import '../../services/ad_service.dart';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
@@ -39,6 +42,40 @@ class _HomeScreenState extends State<HomeScreen>
   // Prophet's Sunnah Missions Card State
   bool _showRegularCardOverride = false;
   String? _selectedNightMissionId;
+  NativeAd? _nativeAd;
+  bool _isNativeAdLoaded = false;
+
+  void _loadNativeAd() {
+    if (!Platform.isAndroid && !Platform.isIOS) return;
+    try {
+      _nativeAd = NativeAd(
+        adUnitId: AdService.nativeAdUnitId,
+        factoryId: 'homeScreenNativeAd',
+        request: const AdRequest(),
+        listener: NativeAdListener(
+          onAdLoaded: (ad) {
+            if (mounted) {
+              setState(() {
+                _isNativeAdLoaded = true;
+              });
+            }
+          },
+          onAdFailedToLoad: (ad, error) {
+            debugPrint('[HomeScreen] Native ad failed to load: $error');
+            ad.dispose();
+            if (mounted) {
+              setState(() {
+                _nativeAd = null;
+                _isNativeAdLoaded = false;
+              });
+            }
+          },
+        ),
+      )..load();
+    } catch (e) {
+      debugPrint('[HomeScreen] Native ad exception: $e');
+    }
+  }
 
   @override
   void didChangeDependencies() {
@@ -110,6 +147,7 @@ class _HomeScreenState extends State<HomeScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _loadNativeAd();
 
     // Background sync apps without artificial delay since disk cache is already hydrated
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -117,23 +155,25 @@ class _HomeScreenState extends State<HomeScreen>
       final appState = Provider.of<AppState>(context, listen: false);
 
       AppListScreen.preload(
-        onRawAppsFetched: (raw) {
-          if (mounted) appState.syncAppsWithCategories(raw);
-        },
-        onProgress: () {
-          if (mounted) setState(() {});
-        },
-      ).then((_) {
-        if (!mounted) return;
-        setState(() {});
-        _checkAccessibilityStatus();
-      }).catchError((_) {});
+            onRawAppsFetched: (raw) {
+              if (mounted) appState.syncAppsWithCategories(raw);
+            },
+            onProgress: () {
+              if (mounted) setState(() {});
+            },
+          )
+          .then((_) {
+            if (!mounted) return;
+            setState(() {});
+            _checkAccessibilityStatus();
+          })
+          .catchError((_) {});
     });
   }
 
   Future<void> _checkAccessibilityStatus() async {
     final appState = Provider.of<AppState>(context, listen: false);
-    
+
     // In passive mode, accessibility is not required/prompted
     if (appState.isPassiveMode) return;
 
@@ -153,7 +193,7 @@ class _HomeScreenState extends State<HomeScreen>
     final appState = Provider.of<AppState>(context, listen: false);
     // Explicitly check if the service is already enabled to avoid redundant prompts
     if (appState.isAccessibilityEnabled) return;
-    
+
     appState.setHasSeenAccessibilitySetup(true);
 
     showDialog(
@@ -222,6 +262,7 @@ class _HomeScreenState extends State<HomeScreen>
   void dispose() {
     AppState.routeObserver.unsubscribe(this);
     _spiritualEnergyController?.dispose();
+    _nativeAd?.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -247,9 +288,7 @@ class _HomeScreenState extends State<HomeScreen>
     }
 
     appState.navigatorKey.currentState
-        ?.push(
-          AppPageRoute(child: const SurahListScreen()),
-        )
+        ?.push(AppPageRoute(child: const SurahListScreen()))
         .then((_) {
           if (mounted) setState(() {});
         });
@@ -266,9 +305,7 @@ class _HomeScreenState extends State<HomeScreen>
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.18),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.25),
-        ),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -300,21 +337,21 @@ class _HomeScreenState extends State<HomeScreen>
 
     final combinedSpiritualProgress =
         QuranProgressHelper.getCombinedSpiritualProgress(
-      khatmCount: appState.khatmCount,
-      currentSurahIndex: appState.currentSurahIndex,
-      currentAyahNumber: appState.lastReadAyahNumber,
-      quranData: appState.quranData,
-      totalDzikirCount: appState.totalDzikirCount,
-    );
+          khatmCount: appState.khatmCount,
+          currentSurahIndex: appState.currentSurahIndex,
+          currentAyahNumber: appState.lastReadAyahNumber,
+          quranData: appState.quranData,
+          totalDzikirCount: appState.totalDzikirCount,
+        );
 
     return PopScope(
       canPop: false,
       child: Scaffold(
         backgroundColor: const Color(0xFFF8FAFA),
-      body: !appState.isReady
-          ? _buildLoadingState()
-          : Stack(
-              key: const ValueKey('home_content'),
+        body: !appState.isReady
+            ? _buildLoadingState()
+            : Stack(
+                key: const ValueKey('home_content'),
                 children: [
                   // Background Gradient
                   Positioned.fill(
@@ -348,21 +385,36 @@ class _HomeScreenState extends State<HomeScreen>
                               bottom: -32,
                               top: 15,
                               child: AnimatedBuilder(
-                                animation: _spiritualEnergyController ?? const AlwaysStoppedAnimation(0.0),
+                                animation:
+                                    _spiritualEnergyController ??
+                                    const AlwaysStoppedAnimation(0.0),
                                 builder: (context, _) {
                                   double? activeAnimatedProgress;
                                   double? activeBreeze;
-                                  if (_spiritualEnergyController != null && _activeEnergySession != null) {
+                                  if (_spiritualEnergyController != null &&
+                                      _activeEnergySession != null) {
                                     final t = _spiritualEnergyController!.value;
-                                    final curvedT = Curves.easeInOutCubic.transform(t);
+                                    final curvedT = Curves.easeInOutCubic
+                                        .transform(t);
                                     activeAnimatedProgress = ui.lerpDouble(
                                       _activeEnergySession!.previousProgress,
                                       _activeEnergySession!.targetProgress,
                                       curvedT,
                                     );
-                                    final double breezeCycle = t * math.pi * 2 * (_activeEnergySession!.durationSeconds / 4.2);
-                                    final double envelope = math.sin(t * math.pi);
-                                    activeBreeze = (math.sin(breezeCycle) * 0.25 + math.sin(breezeCycle * 0.45) * 0.1) * envelope;
+                                    final double breezeCycle =
+                                        t *
+                                        math.pi *
+                                        2 *
+                                        (_activeEnergySession!.durationSeconds /
+                                            4.2);
+                                    final double envelope = math.sin(
+                                      t * math.pi,
+                                    );
+                                    activeBreeze =
+                                        (math.sin(breezeCycle) * 0.25 +
+                                            math.sin(breezeCycle * 0.45) *
+                                                0.1) *
+                                        envelope;
                                   }
 
                                   return GrowthTreeWidget(
@@ -382,7 +434,8 @@ class _HomeScreenState extends State<HomeScreen>
                               bottom: -32,
                               height: 80,
                               child: AnimatedBuilder(
-                                animation: _spiritualEnergyController ??
+                                animation:
+                                    _spiritualEnergyController ??
                                     const AlwaysStoppedAnimation(0.0),
                                 builder: (context, _) {
                                   if (_spiritualEnergyController == null ||
@@ -422,7 +475,12 @@ class _HomeScreenState extends State<HomeScreen>
 
                             // 2. Foreground: Greeting & Clock
                             Padding(
-                              padding: const EdgeInsets.fromLTRB(24, 16, 24, 20),
+                              padding: const EdgeInsets.fromLTRB(
+                                24,
+                                16,
+                                24,
+                                20,
+                              ),
                               child: Column(
                                 children: [
                                   Row(
@@ -449,38 +507,51 @@ class _HomeScreenState extends State<HomeScreen>
                                                   borderRadius:
                                                       BorderRadius.circular(16),
                                                   child: Container(
-                                                    padding: const EdgeInsets.symmetric(
-                                                      horizontal: 10,
-                                                      vertical: 6,
-                                                    ),
-                                                    decoration: BoxDecoration(
-                                                      color: Colors.white.withValues(
-                                                        alpha: 0.18,
-                                                      ),
-                                                      borderRadius:
-                                                          BorderRadius.circular(16),
-                                                      border: Border.all(
-                                                        color: Colors.white.withValues(
-                                                          alpha: 0.25,
+                                                    padding:
+                                                        const EdgeInsets.symmetric(
+                                                          horizontal: 10,
+                                                          vertical: 6,
                                                         ),
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.white
+                                                          .withValues(
+                                                            alpha: 0.18,
+                                                          ),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            16,
+                                                          ),
+                                                      border: Border.all(
+                                                        color: Colors.white
+                                                            .withValues(
+                                                              alpha: 0.25,
+                                                            ),
                                                       ),
                                                     ),
                                                     child: Row(
-                                                      mainAxisSize: MainAxisSize.min,
+                                                      mainAxisSize:
+                                                          MainAxisSize.min,
                                                       children: [
                                                         const Icon(
-                                                          Icons.language_rounded,
+                                                          Icons
+                                                              .language_rounded,
                                                           color: Colors.white,
                                                           size: 15,
                                                         ),
-                                                        const SizedBox(width: 4),
+                                                        const SizedBox(
+                                                          width: 4,
+                                                        ),
                                                         Text(
                                                           lang.toUpperCase(),
-                                                          style: const TextStyle(
-                                                            color: Colors.white,
-                                                            fontSize: 11,
-                                                            fontWeight: FontWeight.bold,
-                                                          ),
+                                                          style:
+                                                              const TextStyle(
+                                                                color: Colors
+                                                                    .white,
+                                                                fontSize: 11,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold,
+                                                              ),
                                                         ),
                                                       ],
                                                     ),
@@ -492,21 +563,24 @@ class _HomeScreenState extends State<HomeScreen>
                                                 color: Colors.transparent,
                                                 child: InkWell(
                                                   onTap: () => appState
-                                                      .navigatorKey.currentState
+                                                      .navigatorKey
+                                                      .currentState
                                                       ?.push(
-                                                    AppPageRoute(
-                                                      child:
-                                                          const ReadingHistoryScreen(),
-                                                    ),
-                                                  ),
+                                                        AppPageRoute(
+                                                          child:
+                                                              const ReadingHistoryScreen(),
+                                                        ),
+                                                      ),
                                                   borderRadius:
                                                       BorderRadius.circular(16),
                                                   child: Container(
-                                                    padding: const EdgeInsets.all(8),
+                                                    padding:
+                                                        const EdgeInsets.all(8),
                                                     decoration: BoxDecoration(
-                                                      color: Colors.white.withValues(
-                                                        alpha: 0.18,
-                                                      ),
+                                                      color: Colors.white
+                                                          .withValues(
+                                                            alpha: 0.18,
+                                                          ),
                                                       shape: BoxShape.circle,
                                                     ),
                                                     child: const Icon(
@@ -673,251 +747,355 @@ class _HomeScreenState extends State<HomeScreen>
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
                                         children: [
-                                           Builder(
-                                             builder: (context) {
-                                               final colorScheme = Theme.of(context).colorScheme;
-                                               final activeSunnahMissions =
-                                                   SunnahMissionHelper.getCurrentlyActiveMissions();
-                                               final uncompletedSunnahMissions = activeSunnahMissions
-                                                   .where((m) =>
-                                                       !appState.isSunnahMissionCompletedToday(m.id))
-                                                   .toList();
-                                               final bool hasActiveSunnah =
-                                                   uncompletedSunnahMissions.isNotEmpty;
-                                               final bool showSunnahCard =
-                                                   hasActiveSunnah && !_showRegularCardOverride;
+                                          Builder(
+                                            builder: (context) {
+                                              final colorScheme = Theme.of(
+                                                context,
+                                              ).colorScheme;
+                                              final activeSunnahMissions =
+                                                  SunnahMissionHelper.getCurrentlyActiveMissions();
+                                              final uncompletedSunnahMissions =
+                                                  activeSunnahMissions
+                                                      .where(
+                                                        (m) => !appState
+                                                            .isSunnahMissionCompletedToday(
+                                                              m.id,
+                                                            ),
+                                                      )
+                                                      .toList();
+                                              final bool hasActiveSunnah =
+                                                  uncompletedSunnahMissions
+                                                      .isNotEmpty;
+                                              final bool showSunnahCard =
+                                                  hasActiveSunnah &&
+                                                  !_showRegularCardOverride;
 
-                                               return Column(
-                                                 crossAxisAlignment: CrossAxisAlignment.start,
-                                                 children: [
-                                                   // Card Header with Khatam Count outside the card
-                                                   Row(
-                                                     mainAxisAlignment:
-                                                         MainAxisAlignment.spaceBetween,
-                                                     crossAxisAlignment:
-                                                         CrossAxisAlignment.center,
-                                                     children: [
-                                                       Flexible(
-                                                         child: Row(
-                                                           mainAxisSize: MainAxisSize.min,
-                                                           children: [
-                                                             Flexible(
-                                                               child: Text(
-                                                                 showSunnahCard
-                                                                     ? Translations.get(
-                                                                         lang,
-                                                                         'sunnah_mission_header',
-                                                                       ).toUpperCase()
-                                                                     : Translations.get(
-                                                                         lang,
-                                                                         'continue_journey',
-                                                                       ).toUpperCase(),
-                                                                 maxLines: 1,
-                                                                 overflow: TextOverflow.ellipsis,
-                                                                 style: TextStyle(
-                                                                   color: showSunnahCard
-                                                                       ? const Color(0xFF065F46)
-                                                                       : Colors.teal.shade900
-                                                                           .withValues(alpha: 0.5),
-                                                                   fontSize: 11,
-                                                                   fontWeight: FontWeight.bold,
-                                                                   letterSpacing: 1.2,
-                                                                 ),
-                                                               ),
-                                                             ),
-                                                             if (hasActiveSunnah) ...[
-                                                               const SizedBox(width: 8),
-                                                               Material(
-                                                                 color: Colors.transparent,
-                                                                 child: InkWell(
-                                                                   onTap: () {
-                                                                     setState(() {
-                                                                       _showRegularCardOverride =
-                                                                           !_showRegularCardOverride;
-                                                                     });
-                                                                   },
-                                                                   borderRadius:
-                                                                       BorderRadius.circular(12),
-                                                                   child: Container(
-                                                                     padding:
-                                                                         const EdgeInsets.symmetric(
-                                                                       horizontal: 7,
-                                                                       vertical: 2.5,
-                                                                     ),
-                                                                     decoration: BoxDecoration(
-                                                                       color: showSunnahCard
-                                                                           ? colorScheme
-                                                                               .surfaceContainerHighest
-                                                                               .withValues(alpha: 0.6)
-                                                                           : Colors.amber.shade50,
-                                                                       borderRadius:
-                                                                           BorderRadius.circular(12),
-                                                                       border: Border.all(
-                                                                         color: showSunnahCard
-                                                                             ? colorScheme
-                                                                                 .outlineVariant
-                                                                                 .withValues(
-                                                                                     alpha: 0.4)
-                                                                             : Colors.amber.shade400,
-                                                                         width: 0.8,
-                                                                       ),
-                                                                     ),
-                                                                     child: Row(
-                                                                       mainAxisSize: MainAxisSize.min,
-                                                                       children: [
-                                                                         Icon(
-                                                                           showSunnahCard
-                                                                               ? Icons
-                                                                                   .swap_horiz_rounded
-                                                                               : Icons.stars_rounded,
-                                                                           size: 11.5,
-                                                                           color: showSunnahCard
-                                                                               ? colorScheme.primary
-                                                                               : const Color(
-                                                                                   0xFFD97706),
-                                                                         ),
-                                                                         const SizedBox(width: 3.5),
-                                                                         Text(
-                                                                           showSunnahCard
-                                                                               ? Translations.get(
-                                                                                   lang,
-                                                                                   'switch_to_regular',
-                                                                                 )
-                                                                               : Translations.get(
-                                                                                   lang,
-                                                                                   'switch_to_sunnah',
-                                                                                 ),
-                                                                           style: TextStyle(
-                                                                             fontSize: 10,
-                                                                             fontWeight:
-                                                                                 FontWeight.bold,
-                                                                             color: showSunnahCard
-                                                                                 ? colorScheme.primary
-                                                                                 : const Color(
-                                                                                     0xFF92400E),
-                                                                           ),
-                                                                         ),
-                                                                       ],
-                                                                     ),
-                                                                   ),
-                                                                 ),
-                                                               ),
-                                                             ],
-                                                           ],
-                                                         ),
-                                                       ),
-                                                       const SizedBox(width: 8),
-                                                       // Badge jumlah khatam di luar card
-                                                       Material(
-                                                         color: Colors.transparent,
-                                                         child: InkWell(
-                                                           onTap: () {
-                                                             QuranProgressHelper
-                                                                 .showKhatamLevelInfoModal(
-                                                               context,
-                                                               lang,
-                                                               appState.khatmCount,
-                                                             );
-                                                           },
-                                                           borderRadius:
-                                                               BorderRadius.circular(12),
-                                                           child: Container(
-                                                             padding: const EdgeInsets.symmetric(
-                                                               horizontal: 9,
-                                                               vertical: 3.5,
-                                                             ),
-                                                             decoration: BoxDecoration(
-                                                               color: appState.khatmCount > 0
-                                                                   ? Colors.amber.shade50
-                                                                   : Colors.teal.shade50
-                                                                       .withValues(alpha: 0.7),
-                                                               borderRadius:
-                                                                   BorderRadius.circular(12),
-                                                               border: Border.all(
-                                                                 color: appState.khatmCount > 0
-                                                                     ? Colors.amber.shade400
-                                                                     : Colors.teal.shade200
-                                                                         .withValues(alpha: 0.6),
-                                                                 width: 0.8,
-                                                               ),
-                                                             ),
-                                                             child: Row(
-                                                               mainAxisSize: MainAxisSize.min,
-                                                               children: [
-                                                                 Icon(
-                                                                   Icons.workspace_premium_rounded,
-                                                                   size: 13,
-                                                                   color: appState.khatmCount > 0
-                                                                       ? const Color(0xFFD97706)
-                                                                       : Colors.teal.shade700,
-                                                                 ),
-                                                                 const SizedBox(width: 4),
-                                                                 Text(
-                                                                   "${appState.khatmCount}x ${Translations.get(lang, 'khatam')}",
-                                                                   style: TextStyle(
-                                                                     color: appState.khatmCount > 0
-                                                                         ? const Color(0xFF92400E)
-                                                                         : Colors.teal.shade800,
-                                                                     fontSize: 11,
-                                                                     fontWeight: FontWeight.bold,
-                                                                   ),
-                                                                 ),
-                                                               ],
-                                                             ),
-                                                           ),
-                                                         ),
-                                                       ),
-                                                     ],
-                                                   ),
-                                                   const SizedBox(height: 12),
-                                                   if (showSunnahCard)
-                                                     RepaintBoundary(
-                                                       child: _SunnahMissionHomeCard(
-                                                         activeMissions: activeSunnahMissions,
-                                                         lang: lang,
-                                                         appState: appState,
-                                                         initialSelectedMissionId:
-                                                             _selectedNightMissionId,
-                                                         onMissionSelected: (id) {
-                                                           _selectedNightMissionId = id;
-                                                         },
-                                                       ),
-                                                     )
-                                                   else
-                                                     Builder(
-                                                       builder: (context) {
-                                                         int totalAyahs = 0;
-                                                         if (appState.quranData.isNotEmpty &&
-                                                             appState.currentSurahIndex >= 0 &&
-                                                             appState.currentSurahIndex <
-                                                                 appState.quranData.length) {
-                                                           totalAyahs = (appState.quranData[appState
-                                                                   .currentSurahIndex]['ayahs']
-                                                               as List)
-                                                               .length;
-                                                         }
+                                              return Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  // Card Header with Khatam Count outside the card
+                                                  Row(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .spaceBetween,
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .center,
+                                                    children: [
+                                                      Flexible(
+                                                        child: Row(
+                                                          mainAxisSize:
+                                                              MainAxisSize.min,
+                                                          children: [
+                                                            Flexible(
+                                                              child: Text(
+                                                                showSunnahCard
+                                                                    ? Translations.get(
+                                                                        lang,
+                                                                        'sunnah_mission_header',
+                                                                      ).toUpperCase()
+                                                                    : Translations.get(
+                                                                        lang,
+                                                                        'continue_journey',
+                                                                      ).toUpperCase(),
+                                                                maxLines: 1,
+                                                                overflow:
+                                                                    TextOverflow
+                                                                        .ellipsis,
+                                                                style: TextStyle(
+                                                                  color:
+                                                                      showSunnahCard
+                                                                      ? const Color(
+                                                                          0xFF065F46,
+                                                                        )
+                                                                      : Colors
+                                                                            .teal
+                                                                            .shade900
+                                                                            .withValues(
+                                                                              alpha: 0.5,
+                                                                            ),
+                                                                  fontSize: 11,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .bold,
+                                                                  letterSpacing:
+                                                                      1.2,
+                                                                ),
+                                                              ),
+                                                            ),
+                                                            if (hasActiveSunnah) ...[
+                                                              const SizedBox(
+                                                                width: 8,
+                                                              ),
+                                                              Material(
+                                                                color: Colors
+                                                                    .transparent,
+                                                                child: InkWell(
+                                                                  onTap: () {
+                                                                    setState(() {
+                                                                      _showRegularCardOverride =
+                                                                          !_showRegularCardOverride;
+                                                                    });
+                                                                  },
+                                                                  borderRadius:
+                                                                      BorderRadius.circular(
+                                                                        12,
+                                                                      ),
+                                                                  child: Container(
+                                                                    padding: const EdgeInsets.symmetric(
+                                                                      horizontal:
+                                                                          7,
+                                                                      vertical:
+                                                                          2.5,
+                                                                    ),
+                                                                    decoration: BoxDecoration(
+                                                                      color:
+                                                                          showSunnahCard
+                                                                          ? colorScheme.surfaceContainerHighest.withValues(
+                                                                              alpha: 0.6,
+                                                                            )
+                                                                          : Colors.amber.shade50,
+                                                                      borderRadius:
+                                                                          BorderRadius.circular(
+                                                                            12,
+                                                                          ),
+                                                                      border: Border.all(
+                                                                        color:
+                                                                            showSunnahCard
+                                                                            ? colorScheme.outlineVariant.withValues(
+                                                                                alpha: 0.4,
+                                                                              )
+                                                                            : Colors.amber.shade400,
+                                                                        width:
+                                                                            0.8,
+                                                                      ),
+                                                                    ),
+                                                                    child: Row(
+                                                                      mainAxisSize:
+                                                                          MainAxisSize
+                                                                              .min,
+                                                                      children: [
+                                                                        Icon(
+                                                                          showSunnahCard
+                                                                              ? Icons.swap_horiz_rounded
+                                                                              : Icons.stars_rounded,
+                                                                          size:
+                                                                              11.5,
+                                                                          color:
+                                                                              showSunnahCard
+                                                                              ? colorScheme.primary
+                                                                              : const Color(
+                                                                                  0xFFD97706,
+                                                                                ),
+                                                                        ),
+                                                                        const SizedBox(
+                                                                          width:
+                                                                              3.5,
+                                                                        ),
+                                                                        Text(
+                                                                          showSunnahCard
+                                                                              ? Translations.get(
+                                                                                  lang,
+                                                                                  'switch_to_regular',
+                                                                                )
+                                                                              : Translations.get(
+                                                                                  lang,
+                                                                                  'switch_to_sunnah',
+                                                                                ),
+                                                                          style: TextStyle(
+                                                                            fontSize:
+                                                                                10,
+                                                                            fontWeight:
+                                                                                FontWeight.bold,
+                                                                            color:
+                                                                                showSunnahCard
+                                                                                ? colorScheme.primary
+                                                                                : const Color(
+                                                                                    0xFF92400E,
+                                                                                  ),
+                                                                          ),
+                                                                        ),
+                                                                      ],
+                                                                    ),
+                                                                  ),
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ],
+                                                        ),
+                                                      ),
+                                                      const SizedBox(width: 8),
+                                                      // Badge jumlah khatam di luar card
+                                                      Material(
+                                                        color:
+                                                            Colors.transparent,
+                                                        child: InkWell(
+                                                          onTap: () {
+                                                            QuranProgressHelper.showKhatamLevelInfoModal(
+                                                              context,
+                                                              lang,
+                                                              appState
+                                                                  .khatmCount,
+                                                            );
+                                                          },
+                                                          borderRadius:
+                                                              BorderRadius.circular(
+                                                                12,
+                                                              ),
+                                                          child: Container(
+                                                            padding:
+                                                                const EdgeInsets.symmetric(
+                                                                  horizontal: 9,
+                                                                  vertical: 3.5,
+                                                                ),
+                                                            decoration: BoxDecoration(
+                                                              color:
+                                                                  appState.khatmCount >
+                                                                      0
+                                                                  ? Colors
+                                                                        .amber
+                                                                        .shade50
+                                                                  : Colors
+                                                                        .teal
+                                                                        .shade50
+                                                                        .withValues(
+                                                                          alpha:
+                                                                              0.7,
+                                                                        ),
+                                                              borderRadius:
+                                                                  BorderRadius.circular(
+                                                                    12,
+                                                                  ),
+                                                              border: Border.all(
+                                                                color:
+                                                                    appState.khatmCount >
+                                                                        0
+                                                                    ? Colors
+                                                                          .amber
+                                                                          .shade400
+                                                                    : Colors
+                                                                          .teal
+                                                                          .shade200
+                                                                          .withValues(
+                                                                            alpha:
+                                                                                0.6,
+                                                                          ),
+                                                                width: 0.8,
+                                                              ),
+                                                            ),
+                                                            child: Row(
+                                                              mainAxisSize:
+                                                                  MainAxisSize
+                                                                      .min,
+                                                              children: [
+                                                                Icon(
+                                                                  Icons
+                                                                      .workspace_premium_rounded,
+                                                                  size: 13,
+                                                                  color:
+                                                                      appState.khatmCount >
+                                                                          0
+                                                                      ? const Color(
+                                                                          0xFFD97706,
+                                                                        )
+                                                                      : Colors
+                                                                            .teal
+                                                                            .shade700,
+                                                                ),
+                                                                const SizedBox(
+                                                                  width: 4,
+                                                                ),
+                                                                Text(
+                                                                  "${appState.khatmCount}x ${Translations.get(lang, 'khatam')}",
+                                                                  style: TextStyle(
+                                                                    color:
+                                                                        appState.khatmCount >
+                                                                            0
+                                                                        ? const Color(
+                                                                            0xFF92400E,
+                                                                          )
+                                                                        : Colors
+                                                                              .teal
+                                                                              .shade800,
+                                                                    fontSize:
+                                                                        11,
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .bold,
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  const SizedBox(height: 12),
+                                                  if (showSunnahCard)
+                                                    RepaintBoundary(
+                                                      child: _SunnahMissionHomeCard(
+                                                        activeMissions:
+                                                            activeSunnahMissions,
+                                                        lang: lang,
+                                                        appState: appState,
+                                                        initialSelectedMissionId:
+                                                            _selectedNightMissionId,
+                                                        onMissionSelected: (id) {
+                                                          _selectedNightMissionId =
+                                                              id;
+                                                        },
+                                                      ),
+                                                    )
+                                                  else
+                                                    Builder(
+                                                      builder: (context) {
+                                                        int totalAyahs = 0;
+                                                        if (appState
+                                                                .quranData
+                                                                .isNotEmpty &&
+                                                            appState.currentSurahIndex >=
+                                                                0 &&
+                                                            appState.currentSurahIndex <
+                                                                appState
+                                                                    .quranData
+                                                                    .length) {
+                                                          totalAyahs =
+                                                              (appState.quranData[appState
+                                                                          .currentSurahIndex]['ayahs']
+                                                                      as List)
+                                                                  .length;
+                                                        }
 
-                                                         return RepaintBoundary(
-                                                           child: _LastAyatCard(
-                                                             surah: appState.lastReadSurah,
-                                                             ayahNumber:
-                                                                 appState.lastReadAyahNumber,
-                                                             totalAyahs: totalAyahs,
-                                                             currentSurahIdx:
-                                                                 appState.currentSurahIndex,
-                                                             lang: lang,
-                                                             khatmCount: appState.khatmCount,
-                                                             quranData: appState.quranData,
-                                                             onTap: () =>
-                                                                 _resumeReading(appState),
-                                                           ),
-                                                         );
-                                                       },
-                                                     ),
-                                                 ],
-                                               );
-                                             },
-                                           ),
+                                                        return RepaintBoundary(
+                                                          child: _LastAyatCard(
+                                                            surah: appState
+                                                                .lastReadSurah,
+                                                            ayahNumber: appState
+                                                                .lastReadAyahNumber,
+                                                            totalAyahs:
+                                                                totalAyahs,
+                                                            currentSurahIdx:
+                                                                appState
+                                                                    .currentSurahIndex,
+                                                            lang: lang,
+                                                            khatmCount: appState
+                                                                .khatmCount,
+                                                            quranData: appState
+                                                                .quranData,
+                                                            onTap: () =>
+                                                                _resumeReading(
+                                                                  appState,
+                                                                ),
+                                                          ),
+                                                        );
+                                                      },
+                                                    ),
+                                                ],
+                                              );
+                                            },
+                                          ),
                                         ],
                                       ),
                                     ),
@@ -945,10 +1123,16 @@ class _HomeScreenState extends State<HomeScreen>
                                       child: _HomeStreakCard(
                                         appState: appState,
                                         lang: lang,
-                                        onOpenQuran: () => _resumeReading(appState),
-                                        onOpenDzikir: () => appState.navigatorKey.currentState?.push(
-                                          AppPageRoute(child: const DzikirScreen()),
-                                        ),
+                                        onOpenQuran: () =>
+                                            _resumeReading(appState),
+                                        onOpenDzikir: () => appState
+                                            .navigatorKey
+                                            .currentState
+                                            ?.push(
+                                              AppPageRoute(
+                                                child: const DzikirScreen(),
+                                              ),
+                                            ),
                                       ),
                                     ),
                                     const SizedBox(height: 24),
@@ -957,8 +1141,9 @@ class _HomeScreenState extends State<HomeScreen>
                                     RepaintBoundary(
                                       child: _DailyInspiration(
                                         lang: lang,
-                                        hadithText:
-                                            appState.getDailyHadithText(lang),
+                                        hadithText: appState.getDailyHadithText(
+                                          lang,
+                                        ),
                                         narrator: appState
                                             .getDailyHadithNarrator(lang),
                                         arabic: appState.dailyHadithArabic,
@@ -967,8 +1152,7 @@ class _HomeScreenState extends State<HomeScreen>
                                             .currentState
                                             ?.push(
                                               AppPageRoute(
-                                                child:
-                                                    const HadithListScreen(),
+                                                child: const HadithListScreen(),
                                               ),
                                             ),
                                       ),
@@ -1034,6 +1218,40 @@ class _HomeScreenState extends State<HomeScreen>
                                       onTap: _openSupportDeveloperUrl,
                                     ),
 
+                                    if (_isNativeAdLoaded &&
+                                        _nativeAd != null) ...[
+                                      const SizedBox(height: 16),
+                                      Container(
+                                        width: double.infinity,
+                                        height: 96,
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius: BorderRadius.circular(
+                                            24,
+                                          ),
+                                          border: Border.all(
+                                            color: const Color(0xFFE2E8F0),
+                                            width: 1,
+                                          ),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black.withValues(
+                                                alpha: 0.04,
+                                              ),
+                                              blurRadius: 18,
+                                              offset: const Offset(0, 4),
+                                            ),
+                                          ],
+                                        ),
+                                        child: ClipRRect(
+                                          borderRadius: BorderRadius.circular(
+                                            24,
+                                          ),
+                                          child: AdWidget(ad: _nativeAd!),
+                                        ),
+                                      ),
+                                    ],
+
                                     SizedBox(
                                       height:
                                           80 +
@@ -1048,7 +1266,6 @@ class _HomeScreenState extends State<HomeScreen>
                       ],
                     ),
                   ),
-
 
                   // Bottom Dock
                   Positioned(
@@ -1118,7 +1335,9 @@ class _HomeScreenState extends State<HomeScreen>
 
   Widget _buildBottomDock(AppState appState, BuildContext context) {
     final lang = appState.languageCode;
-    final hadithLabel = (lang == 'en' || lang == 'sw' || lang == 'af') ? 'Hadith' : (lang == 'ar' ? 'الحديث' : 'Hadits');
+    final hadithLabel = (lang == 'en' || lang == 'sw' || lang == 'af')
+        ? 'Hadith'
+        : (lang == 'ar' ? 'الحديث' : 'Hadits');
 
     final dzikirLabel = lang == 'ar'
         ? 'ذكر'
@@ -1295,15 +1514,24 @@ class _GreetingWidget extends StatelessWidget {
       builder: (dialogCtx) {
         return AlertDialog(
           backgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           title: Row(
             children: [
-              const Icon(Icons.person_rounded, color: Color(0xFF047857), size: 22),
+              const Icon(
+                Icons.person_rounded,
+                color: Color(0xFF047857),
+                size: 22,
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   Translations.get(lang, 'change_name_title'),
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ],
@@ -1315,14 +1543,21 @@ class _GreetingWidget extends StatelessWidget {
             decoration: InputDecoration(
               hintText: Translations.get(lang, 'input_name_hint'),
               filled: true,
-              fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+              fillColor: colorScheme.surfaceContainerHighest.withValues(
+                alpha: 0.3,
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
+                borderSide: BorderSide(
+                  color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+                ),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Color(0xFF047857), width: 1.5),
+                borderSide: const BorderSide(
+                  color: Color(0xFF047857),
+                  width: 1.5,
+                ),
               ),
             ),
           ),
@@ -1341,7 +1576,9 @@ class _GreetingWidget extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF047857),
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
               ),
               child: Text(Translations.get(lang, 'save')),
             ),
@@ -1544,9 +1781,7 @@ class _QuickDock extends StatelessWidget {
 
   Future<void> _openPhoneApp() async {
     try {
-      const intent = AndroidIntent(
-        action: 'android.intent.action.DIAL',
-      );
+      const intent = AndroidIntent(action: 'android.intent.action.DIAL');
       await intent.launch();
     } catch (_) {
       try {
@@ -1582,13 +1817,19 @@ class _QuickDock extends StatelessWidget {
       ]);
 
       if (phonePkg != null) {
-        items.add(_buildIcon(Icons.phone_rounded, phonePkg, overrideTap: () async {
-          try {
-            await _openApp(phonePkg);
-          } catch (_) {
-            await _openPhoneApp();
-          }
-        }));
+        items.add(
+          _buildIcon(
+            Icons.phone_rounded,
+            phonePkg,
+            overrideTap: () async {
+              try {
+                await _openApp(phonePkg);
+              } catch (_) {
+                await _openPhoneApp();
+              }
+            },
+          ),
+        );
       } else {
         // Fallback: Direct native ACTION_DIAL intent call
         items.add(
@@ -1599,7 +1840,11 @@ class _QuickDock extends StatelessWidget {
               width: 44,
               height: 44,
               padding: const EdgeInsets.all(4),
-              child: Icon(Icons.phone_rounded, color: Colors.teal.shade700, size: 24),
+              child: Icon(
+                Icons.phone_rounded,
+                color: Colors.teal.shade700,
+                size: 24,
+              ),
             ),
           ),
         );
@@ -1632,7 +1877,9 @@ class _QuickDock extends StatelessWidget {
 
       // 5. WhatsApp Business (Conditional)
       if (_findFirstAvailable(['com.whatsapp.w4b']) != null) {
-        items.add(_buildIcon(Icons.business_center_rounded, 'com.whatsapp.w4b'));
+        items.add(
+          _buildIcon(Icons.business_center_rounded, 'com.whatsapp.w4b'),
+        );
       }
 
       // 6. Gallery / Photos
@@ -1647,11 +1894,26 @@ class _QuickDock extends StatelessWidget {
       }
     } else {
       // Instant Fallback Dock: Render immediately during startup using iconCache if available
-      items.add(_buildIcon(Icons.phone_rounded, 'com.google.android.dialer', overrideTap: _openPhoneApp));
-      items.add(_buildIcon(Icons.message_rounded, 'com.google.android.apps.messaging'));
-      items.add(_buildIcon(Icons.people_alt_rounded, 'com.google.android.contacts'));
+      items.add(
+        _buildIcon(
+          Icons.phone_rounded,
+          'com.google.android.dialer',
+          overrideTap: _openPhoneApp,
+        ),
+      );
+      items.add(
+        _buildIcon(Icons.message_rounded, 'com.google.android.apps.messaging'),
+      );
+      items.add(
+        _buildIcon(Icons.people_alt_rounded, 'com.google.android.contacts'),
+      );
       items.add(_buildIcon(Icons.chat_bubble_rounded, 'com.whatsapp'));
-      items.add(_buildIcon(Icons.photo_library_rounded, 'com.google.android.apps.photos'));
+      items.add(
+        _buildIcon(
+          Icons.photo_library_rounded,
+          'com.google.android.apps.photos',
+        ),
+      );
     }
 
     // 7. Spiritual Achievements / Pencapaian (Trophy Icon at the far right)
@@ -1659,10 +1921,7 @@ class _QuickDock extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(
-        horizontal: 8,
-        vertical: 12,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
@@ -1680,10 +1939,7 @@ class _QuickDock extends StatelessWidget {
             .map(
               (w) => Flexible(
                 child: Center(
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: w,
-                  ),
+                  child: FittedBox(fit: BoxFit.scaleDown, child: w),
                 ),
               ),
             )
@@ -1692,19 +1948,21 @@ class _QuickDock extends StatelessWidget {
     );
   }
 
-  Widget _buildIcon(IconData fallback, String pkg, {VoidCallback? overrideTap}) {
-    return _DockIcon(
-      fallback: fallback,
-      pkg: pkg,
-      overrideTap: overrideTap,
-    );
+  Widget _buildIcon(
+    IconData fallback,
+    String pkg, {
+    VoidCallback? overrideTap,
+  }) {
+    return _DockIcon(fallback: fallback, pkg: pkg, overrideTap: overrideTap);
   }
 
   Widget _buildTrophyButton(BuildContext context) {
     return Consumer<AppState>(
       builder: (context, appState, _) {
         final lang = appState.languageCode;
-        final unclaimedCount = AchievementsScreen.getUnclaimedBadgesCount(appState);
+        final unclaimedCount = AchievementsScreen.getUnclaimedBadgesCount(
+          appState,
+        );
 
         Widget trophyContent = Container(
           width: 44,
@@ -1714,16 +1972,10 @@ class _QuickDock extends StatelessWidget {
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                Color(0xFFFEF3C7),
-                Color(0xFFFFFBEB),
-              ],
+              colors: [Color(0xFFFEF3C7), Color(0xFFFFFBEB)],
             ),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: const Color(0xFFFCD34D),
-              width: 1.2,
-            ),
+            border: Border.all(color: const Color(0xFFFCD34D), width: 1.2),
             boxShadow: [
               BoxShadow(
                 color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
@@ -1751,7 +2003,10 @@ class _QuickDock extends StatelessWidget {
                 right: -3,
                 child: Container(
                   key: const ValueKey('quick_dock_trophy_badge'),
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 2,
+                  ),
                   constraints: const BoxConstraints(
                     minWidth: 18,
                     minHeight: 18,
@@ -1759,10 +2014,7 @@ class _QuickDock extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: const Color(0xFFEF4444),
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: Colors.white,
-                      width: 1.5,
-                    ),
+                    border: Border.all(color: Colors.white, width: 1.5),
                     boxShadow: [
                       BoxShadow(
                         color: const Color(0xFFEF4444).withValues(alpha: 0.5),
@@ -1978,7 +2230,9 @@ class _HomeStreakCardState extends State<_HomeStreakCard>
             boxShadow: [
               BoxShadow(
                 color: hasAnyPending
-                    ? const Color(0xFFEA580C).withValues(alpha: 0.04 + 0.05 * pulseVal)
+                    ? const Color(
+                        0xFFEA580C,
+                      ).withValues(alpha: 0.04 + 0.05 * pulseVal)
                     : Colors.black.withValues(alpha: 0.04),
                 blurRadius: hasAnyPending ? 16 + 8 * pulseVal : 18,
                 spreadRadius: hasAnyPending ? 0.5 * pulseVal : 0,
@@ -2013,20 +2267,27 @@ class _HomeStreakCardState extends State<_HomeStreakCard>
                                   padding: const EdgeInsets.all(5),
                                   decoration: BoxDecoration(
                                     color: const Color(0xFFF97316).withValues(
-                                      alpha: hasAnyPending ? 0.12 + 0.08 * pulseVal : 0.12,
+                                      alpha: hasAnyPending
+                                          ? 0.12 + 0.08 * pulseVal
+                                          : 0.12,
                                     ),
                                     borderRadius: BorderRadius.circular(8),
                                     boxShadow: hasAnyPending
                                         ? [
                                             BoxShadow(
-                                              color: const Color(0xFFEA580C).withValues(alpha: 0.25 * pulseVal),
+                                              color: const Color(0xFFEA580C)
+                                                  .withValues(
+                                                    alpha: 0.25 * pulseVal,
+                                                  ),
                                               blurRadius: 6 * pulseVal,
                                             ),
                                           ]
                                         : null,
                                   ),
                                   child: Transform.scale(
-                                    scale: hasAnyPending ? 1.0 + 0.10 * pulseVal : 1.0,
+                                    scale: hasAnyPending
+                                        ? 1.0 + 0.10 * pulseVal
+                                        : 1.0,
                                     child: const Icon(
                                       Icons.local_fire_department_rounded,
                                       size: 15,
@@ -2037,7 +2298,8 @@ class _HomeStreakCardState extends State<_HomeStreakCard>
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         titleText,
@@ -2061,7 +2323,9 @@ class _HomeStreakCardState extends State<_HomeStreakCard>
                                           color: hasBothToday
                                               ? const Color(0xFF10B981)
                                               : const Color(0xFFEA580C),
-                                          fontWeight: hasBothToday ? FontWeight.w500 : FontWeight.bold,
+                                          fontWeight: hasBothToday
+                                              ? FontWeight.w500
+                                              : FontWeight.bold,
                                         ),
                                       ),
                                     ],
@@ -2072,33 +2336,56 @@ class _HomeStreakCardState extends State<_HomeStreakCard>
                           ),
                           Consumer<AppState>(
                             builder: (context, appState, _) {
-                              final String todayStr = DateTime.now().toIso8601String().split('T')[0];
-                              final bool hasQuran = appState.lastQuranReadDate == todayStr;
-                              final bool hasDzikir = appState.lastDzikirDate == todayStr;
-                              final int completedCount = (hasQuran ? 1 : 0) + (hasDzikir ? 1 : 0);
-                              final int percent = completedCount == 2 ? 100 : (completedCount == 1 ? 50 : 0);
+                              final String todayStr = DateTime.now()
+                                  .toIso8601String()
+                                  .split('T')[0];
+                              final bool hasQuran =
+                                  appState.lastQuranReadDate == todayStr;
+                              final bool hasDzikir =
+                                  appState.lastDzikirDate == todayStr;
+                              final int completedCount =
+                                  (hasQuran ? 1 : 0) + (hasDzikir ? 1 : 0);
+                              final int percent = completedCount == 2
+                                  ? 100
+                                  : (completedCount == 1 ? 50 : 0);
 
                               final Color percentBgColor = percent == 100
-                                  ? const Color(0xFF10B981).withValues(alpha: 0.12)
+                                  ? const Color(
+                                      0xFF10B981,
+                                    ).withValues(alpha: 0.12)
                                   : (percent == 50
-                                      ? const Color(0xFFF59E0B).withValues(alpha: 0.12)
-                                      : colorScheme.outlineVariant.withValues(alpha: 0.25));
+                                        ? const Color(
+                                            0xFFF59E0B,
+                                          ).withValues(alpha: 0.12)
+                                        : colorScheme.outlineVariant.withValues(
+                                            alpha: 0.25,
+                                          ));
 
                               final Color percentTextColor = percent == 100
                                   ? const Color(0xFF059669)
                                   : (percent == 50
-                                      ? const Color(0xFFD97706)
-                                      : colorScheme.onSurfaceVariant.withValues(alpha: 0.7));
+                                        ? const Color(0xFFD97706)
+                                        : colorScheme.onSurfaceVariant
+                                              .withValues(alpha: 0.7));
 
                               final Color percentBorderColor = percent == 100
-                                  ? const Color(0xFF10B981).withValues(alpha: 0.25)
+                                  ? const Color(
+                                      0xFF10B981,
+                                    ).withValues(alpha: 0.25)
                                   : (percent == 50
-                                      ? const Color(0xFFF59E0B).withValues(alpha: 0.3)
-                                      : Colors.transparent);
+                                        ? const Color(
+                                            0xFFF59E0B,
+                                          ).withValues(alpha: 0.3)
+                                        : Colors.transparent);
 
                               return Container(
-                                key: const ValueKey('home_streak_percentage_badge'),
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                key: const ValueKey(
+                                  'home_streak_percentage_badge',
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
                                 decoration: BoxDecoration(
                                   color: percentBgColor,
                                   borderRadius: BorderRadius.circular(10),
@@ -2150,7 +2437,10 @@ class _HomeStreakCardState extends State<_HomeStreakCard>
                         streakCount: quranStreak,
                         isDoneToday: hasQuranToday,
                         accentColor: const Color(0xFFEA580C),
-                        bgGradient: const [Color(0xFFFFF7ED), Color(0xFFFFEDD5)],
+                        bgGradient: const [
+                          Color(0xFFFFF7ED),
+                          Color(0xFFFFEDD5),
+                        ],
                         borderColor: const Color(0xFFFDBA74),
                         lang: lang,
                         pulseVal: pulseVal,
@@ -2166,7 +2456,10 @@ class _HomeStreakCardState extends State<_HomeStreakCard>
                         streakCount: dzikirStreak,
                         isDoneToday: hasDzikirToday,
                         accentColor: const Color(0xFF4F46E5),
-                        bgGradient: const [Color(0xFFEEF2FF), Color(0xFFE0E7FF)],
+                        bgGradient: const [
+                          Color(0xFFEEF2FF),
+                          Color(0xFFE0E7FF),
+                        ],
                         borderColor: const Color(0xFFA5B4FC),
                         lang: lang,
                         pulseVal: pulseVal,
@@ -2202,15 +2495,16 @@ class _HomeStreakCardState extends State<_HomeStreakCard>
       vars?.forEach((k, v) => s = s.replaceAll('{$k}', v));
       return s;
     }
+
     final nextTarget = streakCount < 1
         ? 1
         : (streakCount < 3
-            ? 3
-            : (streakCount < 7
-                ? 7
-                : (streakCount < 14
-                    ? 14
-                    : (streakCount < 30 ? 30 : streakCount + 30))));
+              ? 3
+              : (streakCount < 7
+                    ? 7
+                    : (streakCount < 14
+                          ? 14
+                          : (streakCount < 30 ? 30 : streakCount + 30))));
     final double progress = (streakCount / nextTarget).clamp(0.0, 1.0);
 
     final String statusDone = t('streak_status_done');
@@ -2249,7 +2543,9 @@ class _HomeStreakCardState extends State<_HomeStreakCard>
               boxShadow: isCalling
                   ? [
                       BoxShadow(
-                        color: accentColor.withValues(alpha: 0.12 + 0.18 * pulseVal),
+                        color: accentColor.withValues(
+                          alpha: 0.12 + 0.18 * pulseVal,
+                        ),
                         blurRadius: 6.0 + 8.0 * pulseVal,
                         spreadRadius: 0.5 + 1.0 * pulseVal,
                         offset: const Offset(0, 2),
@@ -2292,22 +2588,31 @@ class _HomeStreakCardState extends State<_HomeStreakCard>
                       child: FittedBox(
                         fit: BoxFit.scaleDown,
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 5,
+                            vertical: 1.5,
+                          ),
                           decoration: BoxDecoration(
                             color: isDoneToday
                                 ? const Color(0xFF10B981)
-                                : accentColor.withValues(alpha: 0.12 + 0.10 * pulseVal),
+                                : accentColor.withValues(
+                                    alpha: 0.12 + 0.10 * pulseVal,
+                                  ),
                             borderRadius: BorderRadius.circular(6),
                             border: isCalling
                                 ? Border.all(
-                                    color: accentColor.withValues(alpha: 0.35 + 0.35 * pulseVal),
+                                    color: accentColor.withValues(
+                                      alpha: 0.35 + 0.35 * pulseVal,
+                                    ),
                                     width: 0.8,
                                   )
                                 : null,
                             boxShadow: isCalling
                                 ? [
                                     BoxShadow(
-                                      color: accentColor.withValues(alpha: 0.25 * pulseVal),
+                                      color: accentColor.withValues(
+                                        alpha: 0.25 * pulseVal,
+                                      ),
                                       blurRadius: 4 * pulseVal,
                                     ),
                                   ]
@@ -2325,7 +2630,9 @@ class _HomeStreakCardState extends State<_HomeStreakCard>
                                     color: accentColor,
                                     boxShadow: [
                                       BoxShadow(
-                                        color: accentColor.withValues(alpha: 0.4 + 0.6 * pulseVal),
+                                        color: accentColor.withValues(
+                                          alpha: 0.4 + 0.6 * pulseVal,
+                                        ),
                                         blurRadius: 3 + 3 * pulseVal,
                                         spreadRadius: 0.5 * pulseVal,
                                       ),
@@ -2339,7 +2646,9 @@ class _HomeStreakCardState extends State<_HomeStreakCard>
                                 style: TextStyle(
                                   fontSize: 8.5,
                                   fontWeight: FontWeight.bold,
-                                  color: isDoneToday ? Colors.white : accentColor,
+                                  color: isDoneToday
+                                      ? Colors.white
+                                      : accentColor,
                                 ),
                               ),
                             ],
@@ -2374,11 +2683,18 @@ class _HomeStreakCardState extends State<_HomeStreakCard>
                     ),
                     const Spacer(),
                     Transform.translate(
-                      offset: Offset(isCalling ? (isAr ? -2.0 * pulseVal : 2.0 * pulseVal) : 0, 0),
+                      offset: Offset(
+                        isCalling
+                            ? (isAr ? -2.0 * pulseVal : 2.0 * pulseVal)
+                            : 0,
+                        0,
+                      ),
                       child: Icon(
                         Icons.arrow_forward_rounded,
                         size: 13,
-                        color: isCalling ? accentColor : accentColor.withValues(alpha: 0.6),
+                        color: isCalling
+                            ? accentColor
+                            : accentColor.withValues(alpha: 0.6),
                       ),
                     ),
                   ],
@@ -2419,7 +2735,9 @@ class _HomeStreakCardState extends State<_HomeStreakCard>
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                icon == Icons.menu_book_rounded ? t('streak_read_cta') : t('streak_dzikir_cta'),
+                                icon == Icons.menu_book_rounded
+                                    ? t('streak_read_cta')
+                                    : t('streak_dzikir_cta'),
                                 style: TextStyle(
                                   fontSize: 8.5,
                                   fontWeight: FontWeight.bold,
@@ -2427,9 +2745,14 @@ class _HomeStreakCardState extends State<_HomeStreakCard>
                                 ),
                               ),
                               Transform.translate(
-                                offset: Offset(isAr ? -1.5 * pulseVal : 1.5 * pulseVal, 0),
+                                offset: Offset(
+                                  isAr ? -1.5 * pulseVal : 1.5 * pulseVal,
+                                  0,
+                                ),
                                 child: Icon(
-                                  isAr ? Icons.chevron_left_rounded : Icons.chevron_right_rounded,
+                                  isAr
+                                      ? Icons.chevron_left_rounded
+                                      : Icons.chevron_right_rounded,
                                   size: 11,
                                   color: accentColor,
                                 ),
@@ -2483,9 +2806,7 @@ class _SpiritualEnergyBeamWrapper extends StatelessWidget {
             Positioned.fill(
               child: IgnorePointer(
                 child: CustomPaint(
-                  painter: _GoldenLightBeamPainter(
-                    progress: t,
-                  ),
+                  painter: _GoldenLightBeamPainter(progress: t),
                 ),
               ),
             ),
@@ -2502,13 +2823,13 @@ class _SpiritualEnergyBeamWrapper extends StatelessWidget {
 class _GoldenLightBeamPainter extends CustomPainter {
   final double progress; // 0.0 to 1.0
 
-  _GoldenLightBeamPainter({
-    required this.progress,
-  });
+  _GoldenLightBeamPainter({required this.progress});
 
   @override
   void paint(Canvas canvas, Size size) {
-    final double fade = math.sin(progress * math.pi); // smooth entrance and exit
+    final double fade = math.sin(
+      progress * math.pi,
+    ); // smooth entrance and exit
     if (fade <= 0.005) return;
 
     // Gentle calm breathing pulse
@@ -2648,7 +2969,9 @@ class _SunnahMissionHomeCardState extends State<_SunnahMissionHomeCard> {
   void _initSelectedMission() {
     if (widget.activeMissions.isEmpty) return;
     if (widget.initialSelectedMissionId != null &&
-        widget.activeMissions.any((m) => m.id == widget.initialSelectedMissionId)) {
+        widget.activeMissions.any(
+          (m) => m.id == widget.initialSelectedMissionId,
+        )) {
       _selectedId = widget.initialSelectedMissionId!;
       return;
     }
@@ -2669,7 +2992,9 @@ class _SunnahMissionHomeCardState extends State<_SunnahMissionHomeCard> {
       (m) => m.id == _selectedId,
       orElse: () => widget.activeMissions.first,
     );
-    final isCompleted = widget.appState.isSunnahMissionCompletedToday(mission.id);
+    final isCompleted = widget.appState.isSunnahMissionCompletedToday(
+      mission.id,
+    );
     final hasInstallments =
         mission.targetAyahStart != null && mission.targetAyahEnd != null;
     final totalMissionAyahs = hasInstallments
@@ -2738,12 +3063,14 @@ class _SunnahMissionHomeCardState extends State<_SunnahMissionHomeCard> {
                                 vertical: 4.5,
                               ),
                               decoration: BoxDecoration(
-                                color: mission.primaryColor
-                                    .withValues(alpha: 0.12),
+                                color: mission.primaryColor.withValues(
+                                  alpha: 0.12,
+                                ),
                                 borderRadius: BorderRadius.circular(20),
                                 border: Border.all(
-                                  color: mission.primaryColor
-                                      .withValues(alpha: 0.3),
+                                  color: mission.primaryColor.withValues(
+                                    alpha: 0.3,
+                                  ),
                                   width: 0.8,
                                 ),
                               ),
@@ -2805,8 +3132,10 @@ class _SunnahMissionHomeCardState extends State<_SunnahMissionHomeCard> {
                             ),
                             const SizedBox(width: 3),
                             Text(
-                              Translations.get(widget.lang, 'pts_bonus_label')
-                                  .replaceAll('{pts}', '${mission.pointsReward}'),
+                              Translations.get(
+                                widget.lang,
+                                'pts_bonus_label',
+                              ).replaceAll('{pts}', '${mission.pointsReward}'),
                               style: const TextStyle(
                                 color: Color(0xFF92400E),
                                 fontSize: 11,
@@ -2828,8 +3157,8 @@ class _SunnahMissionHomeCardState extends State<_SunnahMissionHomeCard> {
                       child: Row(
                         children: widget.activeMissions.map((m) {
                           final isCurrent = m.id == _selectedId;
-                          final isDone =
-                              widget.appState.isSunnahMissionCompletedToday(m.id);
+                          final isDone = widget.appState
+                              .isSunnahMissionCompletedToday(m.id);
                           return Padding(
                             padding: const EdgeInsets.only(right: 6),
                             child: InkWell(
@@ -2849,13 +3178,14 @@ class _SunnahMissionHomeCardState extends State<_SunnahMissionHomeCard> {
                                   color: isCurrent
                                       ? m.primaryColor.withValues(alpha: 0.15)
                                       : colorScheme.surfaceContainerHighest
-                                          .withValues(alpha: 0.45),
+                                            .withValues(alpha: 0.45),
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
                                     color: isCurrent
                                         ? m.primaryColor
-                                        : colorScheme.outlineVariant
-                                            .withValues(alpha: 0.3),
+                                        : colorScheme.outlineVariant.withValues(
+                                            alpha: 0.3,
+                                          ),
                                     width: isCurrent ? 1.2 : 0.8,
                                   ),
                                 ),
@@ -2904,12 +3234,17 @@ class _SunnahMissionHomeCardState extends State<_SunnahMissionHomeCard> {
                           gradient: LinearGradient(
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
-                            colors: [mission.gradientStart, mission.gradientEnd],
+                            colors: [
+                              mission.gradientStart,
+                              mission.gradientEnd,
+                            ],
                           ),
                           borderRadius: BorderRadius.circular(14),
                           boxShadow: [
                             BoxShadow(
-                              color: mission.primaryColor.withValues(alpha: 0.25),
+                              color: mission.primaryColor.withValues(
+                                alpha: 0.25,
+                              ),
                               blurRadius: 8,
                               offset: const Offset(0, 2),
                             ),
@@ -2956,12 +3291,17 @@ class _SunnahMissionHomeCardState extends State<_SunnahMissionHomeCard> {
                         width: 42,
                         height: 42,
                         decoration: BoxDecoration(
-                          color: isCompleted ? Colors.green : mission.primaryColor,
+                          color: isCompleted
+                              ? Colors.green
+                              : mission.primaryColor,
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: (isCompleted ? Colors.green : mission.primaryColor)
-                                  .withValues(alpha: 0.28),
+                              color:
+                                  (isCompleted
+                                          ? Colors.green
+                                          : mission.primaryColor)
+                                      .withValues(alpha: 0.28),
                               blurRadius: 10,
                               offset: const Offset(0, 3),
                             ),
@@ -3003,9 +3343,9 @@ class _SunnahMissionHomeCardState extends State<_SunnahMissionHomeCard> {
                           Expanded(
                             child: Text(
                               Translations.get(
-                                widget.lang,
-                                'progress_ayah_count',
-                              )
+                                    widget.lang,
+                                    'progress_ayah_count',
+                                  )
                                   .replaceAll('{read}', '$readCount')
                                   .replaceAll('{total}', '$totalMissionAyahs'),
                               style: TextStyle(
@@ -3032,11 +3372,14 @@ class _SunnahMissionHomeCardState extends State<_SunnahMissionHomeCard> {
 
                   // 4. Bottom Row: Hadith quote snippet
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
-                      color: colorScheme.surfaceContainerHighest
-                          .withValues(alpha: 0.35),
+                      color: colorScheme.surfaceContainerHighest.withValues(
+                        alpha: 0.35,
+                      ),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
@@ -3055,8 +3398,9 @@ class _SunnahMissionHomeCardState extends State<_SunnahMissionHomeCard> {
                             style: TextStyle(
                               fontSize: 11,
                               fontStyle: FontStyle.italic,
-                              color: colorScheme.onSurfaceVariant
-                                  .withValues(alpha: 0.9),
+                              color: colorScheme.onSurfaceVariant.withValues(
+                                alpha: 0.9,
+                              ),
                             ),
                           ),
                         ),
@@ -3099,14 +3443,18 @@ class _LastAyatCard extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     final int surahNumber = surah.isNotEmpty ? currentSurahIdx + 1 : 1;
-    final int safeAyah =
-        surah.isNotEmpty ? (ayahNumber > 0 ? ayahNumber : 1) : 1;
-    final int juzNumber =
-        QuranProgressHelper.getJuzNumber(surahNumber, safeAyah);
-    final KhatamPhase currentPhase =
-        QuranProgressHelper.getPhase(juzNumber);
-    final String phaseEncouragement =
-        QuranProgressHelper.getPhaseEncouragement(currentPhase, lang);
+    final int safeAyah = surah.isNotEmpty
+        ? (ayahNumber > 0 ? ayahNumber : 1)
+        : 1;
+    final int juzNumber = QuranProgressHelper.getJuzNumber(
+      surahNumber,
+      safeAyah,
+    );
+    final KhatamPhase currentPhase = QuranProgressHelper.getPhase(juzNumber);
+    final String phaseEncouragement = QuranProgressHelper.getPhaseEncouragement(
+      currentPhase,
+      lang,
+    );
     final double overallProgress = QuranProgressHelper.getOverallProgress(
       currentSurahIdx,
       ayahNumber,
@@ -3115,8 +3463,10 @@ class _LastAyatCard extends StatelessWidget {
     final String percentStr = (overallProgress * 100).toStringAsFixed(1);
     final int levelNum = QuranProgressHelper.getMaqamLevel(khatmCount);
     final String levelPrefix = Translations.get(lang, 'level_prefix');
-    final String maqamTitle =
-        QuranProgressHelper.getMaqamTitle(khatmCount, lang);
+    final String maqamTitle = QuranProgressHelper.getMaqamTitle(
+      khatmCount,
+      lang,
+    );
 
     final bool hasKhatam = khatmCount > 0;
     final String khatamBadgeText = "$levelPrefix $levelNum: $maqamTitle";
@@ -3174,14 +3524,16 @@ class _LastAyatCard extends StatelessWidget {
                               decoration: BoxDecoration(
                                 color: hasKhatam
                                     ? Colors.amber.shade50
-                                    : colorScheme.primaryContainer
-                                        .withValues(alpha: 0.45),
+                                    : colorScheme.primaryContainer.withValues(
+                                        alpha: 0.45,
+                                      ),
                                 borderRadius: BorderRadius.circular(20),
                                 border: Border.all(
                                   color: hasKhatam
                                       ? Colors.amber.shade400
-                                      : colorScheme.primary
-                                          .withValues(alpha: 0.25),
+                                      : colorScheme.primary.withValues(
+                                          alpha: 0.25,
+                                        ),
                                   width: 0.8,
                                 ),
                               ),
@@ -3255,12 +3607,14 @@ class _LastAyatCard extends StatelessWidget {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: colorScheme.surfaceContainerHighest
-                              .withValues(alpha: 0.55),
+                          color: colorScheme.surfaceContainerHighest.withValues(
+                            alpha: 0.55,
+                          ),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                            color: colorScheme.outlineVariant
-                                .withValues(alpha: 0.3),
+                            color: colorScheme.outlineVariant.withValues(
+                              alpha: 0.3,
+                            ),
                             width: 0.8,
                           ),
                         ),
@@ -3285,12 +3639,12 @@ class _LastAyatCard extends StatelessWidget {
                         width: 46,
                         height: 46,
                         decoration: BoxDecoration(
-                          color: colorScheme.primaryContainer
-                              .withValues(alpha: 0.45),
+                          color: colorScheme.primaryContainer.withValues(
+                            alpha: 0.45,
+                          ),
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(
-                            color: colorScheme.primary
-                                .withValues(alpha: 0.15),
+                            color: colorScheme.primary.withValues(alpha: 0.15),
                             width: 0.8,
                           ),
                         ),
@@ -3321,7 +3675,10 @@ class _LastAyatCard extends StatelessWidget {
                             const SizedBox(height: 3),
                             Text(
                               surah.isEmpty
-                                  ? Translations.get(lang, 'find_guidance_today')
+                                  ? Translations.get(
+                                      lang,
+                                      'find_guidance_today',
+                                    )
                                   : "${Translations.get(lang, 'ayah')} $ayahNumber • ${Translations.get(lang, 'surahs')} ${currentSurahIdx + 1}/114",
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -3343,8 +3700,9 @@ class _LastAyatCard extends StatelessWidget {
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: colorScheme.primary
-                                  .withValues(alpha: 0.28),
+                              color: colorScheme.primary.withValues(
+                                alpha: 0.28,
+                              ),
                               blurRadius: 10,
                               offset: const Offset(0, 3),
                             ),
@@ -3409,8 +3767,8 @@ class _LastAyatCard extends StatelessWidget {
                   LayoutBuilder(
                     builder: (context, constraints) {
                       final double barWidth = constraints.maxWidth;
-                      final double fillWidth =
-                          (barWidth * overallProgress).clamp(0.0, barWidth);
+                      final double fillWidth = (barWidth * overallProgress)
+                          .clamp(0.0, barWidth);
 
                       return Stack(
                         clipBehavior: Clip.none,
@@ -3571,10 +3929,7 @@ class _DailyInspiration extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF0F5E3B),
-            Color(0xFF094027),
-          ],
+          colors: [Color(0xFF0F5E3B), Color(0xFF094027)],
         ),
         borderRadius: BorderRadius.circular(28),
         border: Border.all(
@@ -3795,7 +4150,10 @@ class _SupportDeveloperCard extends StatelessWidget {
                 ),
               ),
               style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 12,
+                  horizontal: 16,
+                ),
                 backgroundColor: Colors.white,
                 foregroundColor: const Color(0xFFC2410C),
                 elevation: 2,

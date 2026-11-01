@@ -28,6 +28,9 @@ class AdService {
   /// Ad Unit ID Banner (dibaca dari .env atau fallback ke test ID)
   static String get bannerAdUnitId => EnvConfig.bannerAdUnitId;
 
+  /// Ad Unit ID Native (dibaca dari .env atau fallback ke test ID)
+  static String get nativeAdUnitId => EnvConfig.nativeAdUnitId;
+
   /// Inisialisasi Mobile Ads SDK (Khusus Android)
   Future<void> initialize() async {
     if (_isInitialized) return;

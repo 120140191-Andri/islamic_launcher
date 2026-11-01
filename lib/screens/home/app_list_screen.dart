@@ -1,9 +1,10 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
 import 'dart:io';
 import 'dart:convert';
+import 'dart:math' as math;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 import '../../providers/app_state.dart';
@@ -667,46 +668,167 @@ class _AppListScreenState extends State<AppListScreen>
   List<AppInfo> _filtered = [];
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
-  BannerAd? _bannerAd;
-  bool _isBannerAdLoaded = false;
+  NativeAd? _nativeAd;
+  bool _isNativeAdLoaded = false;
+  int _loadedAdLevel = 0;
+  int? _randomTileAdIndex;
+  bool _level2IsSquare = false;
+  bool _level2IsLeft = false;
+  int? _rowInsertIndex;
+  int? _level2RowStartIndex;
 
-  void _loadBannerAd() {
+  void _randomizeTileAdIndex() {
+    // Rentang kotak 3 baris x 4 kolom = maksimal 12 slot pertama (indeks 0..11)
+    final int maxSlots = math.min(12, _filtered.length + 1);
+    if (maxSlots <= 1) {
+      _randomTileAdIndex = 0;
+    } else {
+      _randomTileAdIndex = math.Random().nextInt(maxSlots);
+    }
+  }
+
+  void _randomizeRowInsertIndex([int adLevel = 0]) {
+    final int totalApps = _filtered.length;
+    final List<int> candidates = [];
+    if (totalApps >= 4) candidates.add(4);
+    if (totalApps >= 8) candidates.add(8);
+    // Khusus iklan 3x4 (Level 4, 3 baris vertikal x 4 kotak horizontal),
+    // penempatannya random di baris setelah app ke-4 (indeks 4) atau setelah app ke-4 + 1 baris (indeks 8).
+    if (adLevel < 4 && totalApps >= 12) {
+      candidates.add(12);
+    }
+
+    if (candidates.isEmpty) {
+      _rowInsertIndex = totalApps;
+    } else {
+      _rowInsertIndex = candidates[math.Random().nextInt(candidates.length)];
+    }
+  }
+
+  void _randomizeLevel2Placement() {
+    _level2IsSquare = math.Random().nextBool();
+    _level2IsLeft = math.Random().nextBool();
+
+    final int totalApps = _filtered.length;
+    if (totalApps < 4) {
+      _level2IsSquare = false;
+      _level2RowStartIndex = 0;
+      return;
+    }
+
+    final List<int> squareCandidates = [];
+    if (totalApps >= 4) squareCandidates.add(0);
+    if (totalApps >= 8) squareCandidates.add(4);
+    if (totalApps >= 12) squareCandidates.add(8);
+
+    if (squareCandidates.isEmpty) {
+      _level2RowStartIndex = 0;
+    } else {
+      _level2RowStartIndex =
+          squareCandidates[math.Random().nextInt(squareCandidates.length)];
+    }
+  }
+
+  void _syncNativeAd(int adLevel) {
+    if (adLevel <= 0) {
+      if (_nativeAd != null) {
+        _disposeNativeAd();
+      }
+      return;
+    }
+    if (_nativeAd != null && _loadedAdLevel == adLevel) {
+      return;
+    }
+    _loadNativeAd(adLevel);
+  }
+
+  void _loadNativeAd(int adLevel) {
     if (!Platform.isAndroid && !Platform.isIOS) return;
+    _disposeNativeAd();
+
+    String factoryId;
+    switch (adLevel) {
+      case 1:
+        factoryId = 'appTileNativeAd';
+        _randomizeTileAdIndex();
+        break;
+      case 2:
+        _randomizeLevel2Placement();
+        _randomizeRowInsertIndex(2);
+        factoryId = _level2IsSquare
+            ? 'square2x2NativeAd'
+            : 'horizontalNativeAd';
+        break;
+      case 3:
+        _randomizeRowInsertIndex(3);
+        factoryId = 'mediumNativeAd';
+        break;
+      case 4:
+      default:
+        _randomizeRowInsertIndex(4);
+        factoryId = 'showcaseNativeAd';
+        break;
+    }
+
     try {
-      _bannerAd = BannerAd(
-        adUnitId: AdService.bannerAdUnitId,
-        size: AdSize.banner,
+      final ad = NativeAd(
+        adUnitId: AdService.nativeAdUnitId,
+        factoryId: factoryId,
         request: const AdRequest(),
-        listener: BannerAdListener(
+        listener: NativeAdListener(
           onAdLoaded: (ad) {
             if (mounted) {
               setState(() {
-                _isBannerAdLoaded = true;
+                _nativeAd = ad as NativeAd;
+                _isNativeAdLoaded = true;
+                _loadedAdLevel = adLevel;
+                if (adLevel == 1 && _randomTileAdIndex == null) {
+                  _randomizeTileAdIndex();
+                }
+                if (adLevel == 2 &&
+                    _level2IsSquare &&
+                    _level2RowStartIndex == null) {
+                  _randomizeLevel2Placement();
+                }
+                if (adLevel >= 2 && _rowInsertIndex == null) {
+                  _randomizeRowInsertIndex(adLevel);
+                }
               });
             }
           },
           onAdFailedToLoad: (ad, error) {
-            debugPrint('[AppListScreen] Banner ad failed to load: $error');
+            debugPrint(
+              '[AppListScreen] Native ad (Level $adLevel, factory: $factoryId) failed to load: $error',
+            );
             ad.dispose();
             if (mounted) {
               setState(() {
-                _bannerAd = null;
-                _isBannerAdLoaded = false;
+                _nativeAd = null;
+                _isNativeAdLoaded = false;
+                _loadedAdLevel = 0;
               });
             }
           },
         ),
-      )..load();
+      );
+      ad.load();
     } catch (e) {
-      debugPrint('[AppListScreen] Banner ad load error: $e');
+      debugPrint('[AppListScreen] Native ad load exception: $e');
     }
+  }
+
+  void _disposeNativeAd() {
+    _nativeAd?.dispose();
+    _nativeAd = null;
+    _isNativeAdLoaded = false;
+    _loadedAdLevel = 0;
   }
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _loadBannerAd();
+    _randomizeTileAdIndex();
 
     if (AppListScreen._cache != null) {
       _apps = AppListScreen._cache;
@@ -717,9 +839,16 @@ class _AppListScreenState extends State<AppListScreen>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final appState = Provider.of<AppState>(context);
+    _syncNativeAd(appState.nonProductiveAppOpenLevel);
+  }
+
+  @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _bannerAd?.dispose();
+    _disposeNativeAd();
     _searchController.dispose();
     super.dispose();
   }
@@ -727,8 +856,9 @@ class _AppListScreenState extends State<AppListScreen>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      // Only re-fetch if cache was invalidated (e.g. after install/uninstall).
-      // Native 'onAppListChanged' callback handles invalidation automatically.
+      final appState = Provider.of<AppState>(context, listen: false);
+      _syncNativeAd(appState.nonProductiveAppOpenLevel);
+      _randomizeTileAdIndex();
       if (AppListScreen._cache == null) {
         _fetchAndSet();
       }
@@ -788,7 +918,8 @@ class _AppListScreenState extends State<AppListScreen>
     // Khusus mode paling rendah (Passive Mode): Tampilkan layar non-produktif di app langsung
     // (bukan overlay), karena service aksesibilitas tidak aktif di mode ini.
     if (appState.isPassiveMode) {
-      final isNonProductive = !appState.isAppUnlocked(app.packageName) &&
+      final isNonProductive =
+          !appState.isAppUnlocked(app.packageName) &&
           (appState.isAppBlocked(app.packageName) ||
               (app.isNonProductive() &&
                   !AppState.isProductiveApp(
@@ -819,6 +950,13 @@ class _AppListScreenState extends State<AppListScreen>
     )) {
       appState.setGhadhulBasharPackage(app.packageName);
       return;
+    }
+    final cleanPkg = app.packageName.toLowerCase().trim();
+    final isNonProd =
+        (appState.blockedApps.contains(cleanPkg) || app.isNonProductive()) &&
+        !AppState.isProductiveApp(app.packageName, app.appName, app.category);
+    if (isNonProd) {
+      appState.recordNonProductiveAppOpen();
     }
     _openApp(app.packageName);
   }
@@ -1067,17 +1205,162 @@ class _AppListScreenState extends State<AppListScreen>
                 ? const Center(child: CircularProgressIndicator())
                 : _buildGrid(lang),
           ),
-          if (_isBannerAdLoaded && _bannerAd != null)
-            SafeArea(
-              top: false,
-              child: Container(
-                width: _bannerAd!.size.width.toDouble(),
-                height: _bannerAd!.size.height.toDouble(),
-                alignment: Alignment.center,
-                child: AdWidget(ad: _bannerAd!),
-              ),
-            ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildWideNativeAd(int adLevel) {
+    if (_nativeAd == null) return const SizedBox.shrink();
+
+    double height;
+    switch (adLevel) {
+      case 2:
+        height = 96.0;
+        break;
+      case 3:
+        height = 235.0;
+        break;
+      case 4:
+      default:
+        height = 330.0;
+        break;
+    }
+
+    return Container(
+      height: height,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF0D5C3A).withValues(alpha: 0.16),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: AdWidget(ad: _nativeAd!),
+      ),
+    );
+  }
+
+  Widget _buildAppTileNativeAd() {
+    if (_nativeAd == null) return const SizedBox.shrink();
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: AdWidget(ad: _nativeAd!),
+    );
+  }
+
+  Widget _buildSquare2x2NativeAd() {
+    if (_nativeAd == null) return const SizedBox.shrink();
+
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF0D5C3A).withValues(alpha: 0.16),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: AdWidget(ad: _nativeAd!),
+      ),
+    );
+  }
+
+  Widget _build2x2Block(
+    List<AppInfo> blockApps,
+    AppState appState,
+    Set<String> blocked, {
+    required double topPadding,
+    required double bottomPadding,
+  }) {
+    final appTile1 = blockApps.isNotEmpty
+        ? _buildAppTile(blockApps[0], appState, blocked)
+        : const SizedBox.shrink();
+    final appTile2 = blockApps.length > 1
+        ? _buildAppTile(blockApps[1], appState, blocked)
+        : const SizedBox.shrink();
+    final appTile3 = blockApps.length > 2
+        ? _buildAppTile(blockApps[2], appState, blocked)
+        : const SizedBox.shrink();
+    final appTile4 = blockApps.length > 3
+        ? _buildAppTile(blockApps[3], appState, blocked)
+        : const SizedBox.shrink();
+
+    final appsColumn = Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          children: [
+            Expanded(child: AspectRatio(aspectRatio: 0.75, child: appTile1)),
+            const SizedBox(width: 16),
+            Expanded(child: AspectRatio(aspectRatio: 0.75, child: appTile2)),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(child: AspectRatio(aspectRatio: 0.75, child: appTile3)),
+            const SizedBox(width: 16),
+            Expanded(child: AspectRatio(aspectRatio: 0.75, child: appTile4)),
+          ],
+        ),
+      ],
+    );
+
+    final adCard = _buildSquare2x2NativeAd();
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(20, topPadding, 20, bottomPadding),
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (_level2IsLeft) ...[
+              Expanded(child: adCard),
+              const SizedBox(width: 16),
+              Expanded(child: appsColumn),
+            ] else ...[
+              Expanded(child: appsColumn),
+              const SizedBox(width: 16),
+              Expanded(child: adCard),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAppTile(AppInfo app, AppState appState, Set<String> blocked) {
+    final cleanPkg = app.packageName.toLowerCase().trim();
+    final isBlockedConfig =
+        blocked.contains(cleanPkg) || blocked.contains(app.packageName);
+    final isProhibited = appState.isAppProhibited(app.packageName, app.appName);
+    final remainingMins = appState.getUnlockRemainingMinutes(app.packageName);
+    final isUnlocked =
+        isBlockedConfig &&
+        (remainingMins > 0 || appState.isAppUnlocked(app.packageName));
+    final isBlocked = isBlockedConfig && !isUnlocked;
+
+    return RepaintBoundary(
+      child: _AppTile(
+        key: ValueKey(app.packageName),
+        app: app,
+        isBlocked: isBlocked,
+        isUnlocked: isUnlocked,
+        isProhibited: isProhibited,
+        remainingMinutes: remainingMins,
+        onTap: () => _onAppTap(app, appState),
+        onLongPress: () => _onAppLongPress(app),
       ),
     );
   }
@@ -1105,52 +1388,209 @@ class _AppListScreenState extends State<AppListScreen>
 
     final appState = Provider.of<AppState>(context);
     final blocked = appState.blockedApps;
+    final adLevel = appState.nonProductiveAppOpenLevel;
 
-    return GridView.builder(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 60),
+    // Saat pencarian aktif, atau belum ada aplikasi non-produktif yang dibuka hari ini (Level 0),
+    // atau iklan belum selesai dimuat: Tampilkan grid aplikasi normal tanpa iklan.
+    final bool showAd =
+        _searchQuery.isEmpty &&
+        adLevel > 0 &&
+        _isNativeAdLoaded &&
+        _nativeAd != null;
+
+    if (!showAd) {
+      return GridView.builder(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 60),
+        physics: const AlwaysScrollableScrollPhysics(
+          parent: ClampingScrollPhysics(),
+        ),
+        cacheExtent: 50,
+        addAutomaticKeepAlives: true,
+        addRepaintBoundaries: true,
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 4,
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
+          childAspectRatio: 0.75,
+        ),
+        itemCount: _filtered.length,
+        itemBuilder: (context, index) {
+          final app = _filtered[index];
+          return _buildAppTile(app, appState, blocked);
+        },
+      );
+    }
+
+    // Level 1: Buka 1x non-produktif -> Tampil iklan native 1 kotak aplikasi (in-grid cell)
+    if (adLevel == 1) {
+      // Penempatan acak di rentang 3 baris x 4 kolom (maksimal 12 kotak pertama)
+      final int maxSlots = math.min(12, _filtered.length + 1);
+      if (_randomTileAdIndex == null || _randomTileAdIndex! >= maxSlots) {
+        _randomizeTileAdIndex();
+      }
+      final int adIndex = _randomTileAdIndex ?? 0;
+      final int totalCount = _filtered.length + 1;
+
+      return GridView.builder(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 60),
+        physics: const AlwaysScrollableScrollPhysics(
+          parent: ClampingScrollPhysics(),
+        ),
+        cacheExtent: 50,
+        addAutomaticKeepAlives: true,
+        addRepaintBoundaries: true,
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 4,
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
+          childAspectRatio: 0.75,
+        ),
+        itemCount: totalCount,
+        itemBuilder: (context, index) {
+          if (index == adIndex) {
+            return RepaintBoundary(child: _buildAppTileNativeAd());
+          }
+          final appIndex = index > adIndex ? index - 1 : index;
+          final app = _filtered[appIndex];
+          return _buildAppTile(app, appState, blocked);
+        },
+      );
+    }
+
+    // Level 2 (Varian 2x2): Memakan 2 kotak horizontal x 2 kotak vertikal (= 4 kotak),
+    // bersanding dengan 4 aplikasi di sisi lainnya (kiri/kanan random, baris acak).
+    if (adLevel == 2 && _level2IsSquare && _filtered.length >= 4) {
+      if (_level2RowStartIndex == null ||
+          _level2RowStartIndex! + 4 > _filtered.length) {
+        _randomizeLevel2Placement();
+      }
+      final int startIndex = math.min(
+        _level2RowStartIndex ?? 0,
+        math.max(0, _filtered.length - 4),
+      );
+      final appsBeforeBlock = _filtered.sublist(0, startIndex);
+      final blockApps = _filtered.sublist(startIndex, startIndex + 4);
+      final appsAfterBlock = _filtered.sublist(startIndex + 4);
+
+      final double blockTopPadding = appsBeforeBlock.isEmpty ? 20.0 : 16.0;
+      final double blockBottomPadding = appsAfterBlock.isEmpty ? 60.0 : 16.0;
+
+      return CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(
+          parent: ClampingScrollPhysics(),
+        ),
+        slivers: [
+          if (appsBeforeBlock.isNotEmpty)
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+              sliver: SliverGrid(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 4,
+                  crossAxisSpacing: 16,
+                  mainAxisSpacing: 16,
+                  childAspectRatio: 0.75,
+                ),
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  final app = appsBeforeBlock[index];
+                  return _buildAppTile(app, appState, blocked);
+                }, childCount: appsBeforeBlock.length),
+              ),
+            ),
+          SliverToBoxAdapter(
+            child: _build2x2Block(
+              blockApps,
+              appState,
+              blocked,
+              topPadding: blockTopPadding,
+              bottomPadding: blockBottomPadding,
+            ),
+          ),
+          if (appsAfterBlock.isNotEmpty)
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 60),
+              sliver: SliverGrid(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 4,
+                  crossAxisSpacing: 16,
+                  mainAxisSpacing: 16,
+                  childAspectRatio: 0.75,
+                ),
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  final app = appsAfterBlock[index];
+                  return _buildAppTile(app, appState, blocked);
+                }, childCount: appsAfterBlock.length),
+              ),
+            ),
+        ],
+      );
+    }
+
+    // Level 2 (Varian 1x4), Level 3, Level 4:
+    // Level 2 -> 4 kotak horizontal (1 baris x 4 kolom, height ~96dp) dengan baris acak
+    // Level 3 -> 2 baris vertikal x 4 kotak horizontal (height ~235dp) dengan baris acak
+    // Level 4 -> 3 baris vertikal x 4 kotak horizontal (maksimal, height ~330dp) dengan baris acak
+    if (_rowInsertIndex == null ||
+        _rowInsertIndex! > _filtered.length ||
+        (adLevel == 4 && _rowInsertIndex! > 8)) {
+      _randomizeRowInsertIndex(adLevel);
+    }
+    final int candidateInsert = _rowInsertIndex ?? 4;
+    final int adInsertIndex = math.min(
+      candidateInsert,
+      _filtered.length >= 4 ? (_filtered.length ~/ 4) * 4 : _filtered.length,
+    );
+    final appsBeforeAd = _filtered.take(adInsertIndex).toList();
+    final appsAfterAd = _filtered.skip(adInsertIndex).toList();
+
+    return CustomScrollView(
       physics: const AlwaysScrollableScrollPhysics(
         parent: ClampingScrollPhysics(),
       ),
-      cacheExtent: 50,
-      addAutomaticKeepAlives: true,
-      addRepaintBoundaries: true,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 4,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
-        childAspectRatio: 0.75,
-      ),
-      itemCount: _filtered.length,
-      itemBuilder: (context, index) {
-        final app = _filtered[index];
-        final cleanPkg = app.packageName.toLowerCase().trim();
-        final isBlockedConfig =
-            blocked.contains(cleanPkg) || blocked.contains(app.packageName);
-        final isProhibited = appState.isAppProhibited(
-          app.packageName,
-          app.appName,
-        );
-        final remainingMins = appState.getUnlockRemainingMinutes(
-          app.packageName,
-        );
-        final isUnlocked =
-            isBlockedConfig &&
-            (remainingMins > 0 || appState.isAppUnlocked(app.packageName));
-        final isBlocked = isBlockedConfig && !isUnlocked;
-
-        return RepaintBoundary(
-          child: _AppTile(
-            key: ValueKey(app.packageName),
-            app: app,
-            isBlocked: isBlocked,
-            isUnlocked: isUnlocked,
-            isProhibited: isProhibited,
-            remainingMinutes: remainingMins,
-            onTap: () => _onAppTap(app, appState),
-            onLongPress: () => _onAppLongPress(app),
+      slivers: [
+        if (appsBeforeAd.isNotEmpty)
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+            sliver: SliverGrid(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 4,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+                childAspectRatio: 0.75,
+              ),
+              delegate: SliverChildBuilderDelegate((context, index) {
+                final app = appsBeforeAd[index];
+                return _buildAppTile(app, appState, blocked);
+              }, childCount: appsBeforeAd.length),
+            ),
           ),
-        );
-      },
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(
+              20,
+              appsBeforeAd.isEmpty ? 20.0 : 16.0,
+              20,
+              appsAfterAd.isEmpty ? 60.0 : 16.0,
+            ),
+            child: _buildWideNativeAd(adLevel),
+          ),
+        ),
+        if (appsAfterAd.isNotEmpty)
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 60),
+            sliver: SliverGrid(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 4,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+                childAspectRatio: 0.75,
+              ),
+              delegate: SliverChildBuilderDelegate((context, index) {
+                final app = appsAfterAd[index];
+                return _buildAppTile(app, appState, blocked);
+              }, childCount: appsAfterAd.length),
+            ),
+          ),
+      ],
     );
   }
 }
@@ -1418,35 +1858,239 @@ class _PointsBadge extends StatelessWidget {
   final int points;
   const _PointsBadge({required this.points});
 
+  void _showDevMenu(BuildContext context) {
+    final appState = Provider.of<AppState>(context, listen: false);
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Color(0xFF0F5E3B),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black26,
+                blurRadius: 20,
+                offset: Offset(0, -4),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white12,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.developer_mode_rounded,
+                      color: Colors.amber,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          "Development Tools",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          "Buka Non-Produktif: ${appState.dailyNonProductiveOpens}x (Level ${appState.nonProductiveAppOpenLevel})",
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              const Divider(color: Colors.white12),
+              const SizedBox(height: 8),
+              _buildDevOption(
+                icon: Icons.refresh_rounded,
+                title: "Reset Non-Produktif Harian",
+                subtitle:
+                    "Kembalikan hitungan ke 0 (Level 0 / Bersih Bebas Iklan)",
+                color: const Color(0xFF10B981),
+                onTap: () async {
+                  await appState.resetDailyNonProductiveState();
+                  if (ctx.mounted) Navigator.pop(ctx);
+                },
+              ),
+              const SizedBox(height: 6),
+              _buildDevOption(
+                icon: Icons.filter_1_rounded,
+                title: "Set 1x Buka (Level 1)",
+                subtitle: "Tampilkan iklan native 1 kotak aplikasi",
+                color: Colors.amber,
+                onTap: () async {
+                  await appState.setDailyNonProductiveOpens(1);
+                  if (ctx.mounted) Navigator.pop(ctx);
+                },
+              ),
+              const SizedBox(height: 6),
+              _buildDevOption(
+                icon: Icons.filter_2_rounded,
+                title: "Set 2x Buka (Level 2)",
+                subtitle: "Tampilkan iklan native 4 kotak horizontal",
+                color: Colors.amber,
+                onTap: () async {
+                  await appState.setDailyNonProductiveOpens(2);
+                  if (ctx.mounted) Navigator.pop(ctx);
+                },
+              ),
+              const SizedBox(height: 6),
+              _buildDevOption(
+                icon: Icons.filter_3_rounded,
+                title: "Set 3x Buka (Level 3)",
+                subtitle: "Tampilkan iklan native 2 baris x 4 kotak",
+                color: Colors.amber,
+                onTap: () async {
+                  await appState.setDailyNonProductiveOpens(3);
+                  if (ctx.mounted) Navigator.pop(ctx);
+                },
+              ),
+              const SizedBox(height: 6),
+              _buildDevOption(
+                icon: Icons.filter_4_rounded,
+                title: "Set 4x Buka (Level 4 - Maksimal)",
+                subtitle: "Tampilkan iklan native 3 baris x 4 kotak",
+                color: Colors.amber,
+                onTap: () async {
+                  await appState.setDailyNonProductiveOpens(4);
+                  if (ctx.mounted) Navigator.pop(ctx);
+                },
+              ),
+              const SizedBox(height: 6),
+              _buildDevOption(
+                icon: Icons.stars_rounded,
+                title: "Reset Poin Development ke 999",
+                subtitle: "Isi ulang poin untuk testing",
+                color: Colors.cyanAccent,
+                onTap: () async {
+                  await appState.setPoints(999);
+                  if (ctx.mounted) Navigator.pop(ctx);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  static Widget _buildDevOption({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.white.withValues(alpha: 0.08),
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          child: Row(
+            children: [
+              Icon(icon, color: color, size: 22),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        color: Colors.white60,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return Center(
-      child: Container(
-        height: 32,
-        padding: const EdgeInsets.symmetric(horizontal: 9),
-        decoration: BoxDecoration(
-          color: colorScheme.tertiaryContainer,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _showDevMenu(context),
           borderRadius: BorderRadius.circular(16),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.stars_rounded,
-              color: colorScheme.onTertiaryContainer,
-              size: 15,
+          child: Container(
+            height: 32,
+            padding: const EdgeInsets.symmetric(horizontal: 9),
+            decoration: BoxDecoration(
+              color: colorScheme.tertiaryContainer,
+              borderRadius: BorderRadius.circular(16),
             ),
-            const SizedBox(width: 4),
-            Text(
-              points.toString(),
-              style: TextStyle(
-                color: colorScheme.onTertiaryContainer,
-                fontWeight: FontWeight.bold,
-                fontSize: 11.5,
-              ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.stars_rounded,
+                  color: colorScheme.onTertiaryContainer,
+                  size: 15,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  points.toString(),
+                  style: TextStyle(
+                    color: colorScheme.onTertiaryContainer,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 11.5,
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

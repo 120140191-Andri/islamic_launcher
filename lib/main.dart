@@ -31,12 +31,20 @@ void main() async {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.error_outline_rounded, color: Colors.white70, size: 64),
+                const Icon(
+                  Icons.error_outline_rounded,
+                  color: Colors.white70,
+                  size: 64,
+                ),
                 const SizedBox(height: 24),
                 const Text(
                   "Oops! Something went wrong",
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 const Text(
@@ -58,10 +66,13 @@ void main() async {
 
   final prefs = await SharedPreferences.getInstance();
 
-  // Kembalikan poin development ke normal (0) jika sebelumnya diset 9999
-  if ((prefs.getInt('points') ?? 0) >= 9000) {
-    await prefs.setInt('points', 0);
-  }
+  // Development: sementara set poin ke 999
+  await prefs.setInt('points', 999);
+
+  // Development: uncomment baris berikut jika ingin reset hitungan non-produktif harian otomatis saat cold boot:
+  // await prefs.setInt('dailyUnlocksCount', 0);
+  // await prefs.setInt('dailyNonProductiveOpens', 0);
+  // await prefs.remove('adGracePeriodEndTime');
 
   // Inisialisasi Mobile Ads SDK di awal agar siap dan preloaded lebih cepat
   await AdService.instance.initialize();
@@ -81,12 +92,17 @@ class IslamicLauncherApp extends StatefulWidget {
   State<IslamicLauncherApp> createState() => _IslamicLauncherAppState();
 }
 
-class _IslamicLauncherAppState extends State<IslamicLauncherApp> with WidgetsBindingObserver {
+class _IslamicLauncherAppState extends State<IslamicLauncherApp>
+    with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final state = Provider.of<AppState>(context, listen: false);
+      if (state.points < 999) {
+        await state.setPoints(999);
+      }
       await AdService.instance.initialize();
     });
   }
@@ -128,19 +144,20 @@ class _IslamicLauncherAppState extends State<IslamicLauncherApp> with WidgetsBin
       title: 'Islamic Launcher',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF0D5C3A),
-          brightness: Brightness.light,
-        ).copyWith(
-          tertiary: const Color(0xFFD97706),
-          onTertiary: Colors.white,
-          tertiaryContainer: const Color(0xFFFEF3C7),
-          onTertiaryContainer: const Color(0xFF92400E),
-          tertiaryFixed: const Color(0xFFFEF3C7),
-          onTertiaryFixed: const Color(0xFF92400E),
-          tertiaryFixedDim: const Color(0xFFFDE68A),
-          onTertiaryFixedVariant: const Color(0xFF78350F),
-        ),
+        colorScheme:
+            ColorScheme.fromSeed(
+              seedColor: const Color(0xFF0D5C3A),
+              brightness: Brightness.light,
+            ).copyWith(
+              tertiary: const Color(0xFFD97706),
+              onTertiary: Colors.white,
+              tertiaryContainer: const Color(0xFFFEF3C7),
+              onTertiaryContainer: const Color(0xFF92400E),
+              tertiaryFixed: const Color(0xFFFEF3C7),
+              onTertiaryFixed: const Color(0xFF92400E),
+              tertiaryFixedDim: const Color(0xFFFDE68A),
+              onTertiaryFixedVariant: const Color(0xFF78350F),
+            ),
         useMaterial3: true,
         scaffoldBackgroundColor: const Color(0xFFF7FAF8),
         pageTransitionsTheme: const PageTransitionsTheme(
@@ -180,21 +197,34 @@ class _IslamicLauncherAppState extends State<IslamicLauncherApp> with WidgetsBin
                   children: [
                     rootWidget,
                     if (!appState.isPassiveMode) ...[
-                      if (appState.lastAttemptedStrictShieldReason?.isNotEmpty ?? false)
+                      if (appState
+                              .lastAttemptedStrictShieldReason
+                              ?.isNotEmpty ??
+                          false)
                         StrictShieldOverlay(
                           reason: appState.lastAttemptedStrictShieldReason!,
                         )
-                      else if (appState.lastAttemptedProhibitedPackage?.isNotEmpty ?? false)
+                      else if (appState
+                              .lastAttemptedProhibitedPackage
+                              ?.isNotEmpty ??
+                          false)
                         ProhibitedAppOverlay(
                           packageName: appState.lastAttemptedProhibitedPackage!,
                         )
-                      else if (appState.lastAttemptedBlockedPackage?.isNotEmpty ?? false)
+                      else if (appState
+                              .lastAttemptedBlockedPackage
+                              ?.isNotEmpty ??
+                          false)
                         BlockedAppScreen(
                           packageName: appState.lastAttemptedBlockedPackage!,
                         )
-                      else if (appState.lastAttemptedGhadhulBasharPackage?.isNotEmpty ?? false)
+                      else if (appState
+                              .lastAttemptedGhadhulBasharPackage
+                              ?.isNotEmpty ??
+                          false)
                         GhadhulBasharOverlay(
-                          packageName: appState.lastAttemptedGhadhulBasharPackage!,
+                          packageName:
+                              appState.lastAttemptedGhadhulBasharPackage!,
                         ),
                     ],
                   ],
@@ -213,7 +243,16 @@ class _HomeScreenSwitcher extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Selector<AppState, ({bool isReady, bool hasCompletedOnboarding, bool hasSelectedLanguage, bool hasSelectedMode, bool isPassiveMode})>(
+    return Selector<
+      AppState,
+      ({
+        bool isReady,
+        bool hasCompletedOnboarding,
+        bool hasSelectedLanguage,
+        bool hasSelectedMode,
+        bool isPassiveMode,
+      })
+    >(
       selector: (context, state) => (
         isReady: state.isReady,
         hasCompletedOnboarding: state.hasCompletedOnboarding,
@@ -229,7 +268,11 @@ class _HomeScreenSwitcher extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.mosque_rounded, size: 72, color: Color(0xFF34D399)),
+                  Icon(
+                    Icons.mosque_rounded,
+                    size: 72,
+                    color: Color(0xFF34D399),
+                  ),
                   SizedBox(height: 24),
                   CircularProgressIndicator(color: Color(0xFF34D399)),
                 ],
@@ -237,10 +280,18 @@ class _HomeScreenSwitcher extends StatelessWidget {
             ),
           );
         }
-        if (status.hasCompletedOnboarding) return const HomeScreen();
-        if (!status.hasSelectedLanguage) return const LanguageScreen();
-        if (!status.hasSelectedMode) return const ModeSelectionScreen(isOnboarding: true);
-        if (status.isPassiveMode) return const SetupLauncherScreen(isSingleStep: true);
+        if (status.hasCompletedOnboarding) {
+          return const HomeScreen();
+        }
+        if (!status.hasSelectedLanguage) {
+          return const LanguageScreen();
+        }
+        if (!status.hasSelectedMode) {
+          return const ModeSelectionScreen(isOnboarding: true);
+        }
+        if (status.isPassiveMode) {
+          return const SetupLauncherScreen(isSingleStep: true);
+        }
         return const SetupHubScreen(isOnboarding: true);
       },
     );

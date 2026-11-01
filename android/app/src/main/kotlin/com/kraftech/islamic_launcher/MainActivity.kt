@@ -1,4 +1,4 @@
-﻿package com.kraftech.islamic_launcher
+package com.kraftech.islamic_launcher
 
 import android.app.admin.DevicePolicyManager
 import android.content.BroadcastReceiver
@@ -154,6 +154,27 @@ class MainActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+
+        // Native Ad Factories for App Drawer Native Ads
+        io.flutter.plugins.googlemobileads.GoogleMobileAdsPlugin.registerNativeAdFactory(
+            flutterEngine, "appTileNativeAd", AppTileNativeAdFactory(context)
+        )
+        io.flutter.plugins.googlemobileads.GoogleMobileAdsPlugin.registerNativeAdFactory(
+            flutterEngine, "horizontalNativeAd", HorizontalNativeAdFactory(context)
+        )
+        io.flutter.plugins.googlemobileads.GoogleMobileAdsPlugin.registerNativeAdFactory(
+            flutterEngine, "mediumNativeAd", MediumNativeAdFactory(context)
+        )
+        io.flutter.plugins.googlemobileads.GoogleMobileAdsPlugin.registerNativeAdFactory(
+            flutterEngine, "showcaseNativeAd", ShowcaseNativeAdFactory(context)
+        )
+        io.flutter.plugins.googlemobileads.GoogleMobileAdsPlugin.registerNativeAdFactory(
+            flutterEngine, "square2x2NativeAd", Square2x2NativeAdFactory(context)
+        )
+        io.flutter.plugins.googlemobileads.GoogleMobileAdsPlugin.registerNativeAdFactory(
+            flutterEngine, "homeScreenNativeAd", HomeScreenNativeAdFactory(context)
+        )
+
         appsChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL)
         val channel = appsChannel!!
 
@@ -884,6 +905,28 @@ class MainActivity : FlutterActivity() {
             Log.e("MainActivity", "shareImage error: ${e.message}", e)
             false
         }
+    }
+
+    override fun cleanUpFlutterEngine(flutterEngine: FlutterEngine) {
+        io.flutter.plugins.googlemobileads.GoogleMobileAdsPlugin.unregisterNativeAdFactory(
+            flutterEngine, "appTileNativeAd"
+        )
+        io.flutter.plugins.googlemobileads.GoogleMobileAdsPlugin.unregisterNativeAdFactory(
+            flutterEngine, "horizontalNativeAd"
+        )
+        io.flutter.plugins.googlemobileads.GoogleMobileAdsPlugin.unregisterNativeAdFactory(
+            flutterEngine, "mediumNativeAd"
+        )
+        io.flutter.plugins.googlemobileads.GoogleMobileAdsPlugin.unregisterNativeAdFactory(
+            flutterEngine, "showcaseNativeAd"
+        )
+        io.flutter.plugins.googlemobileads.GoogleMobileAdsPlugin.unregisterNativeAdFactory(
+            flutterEngine, "square2x2NativeAd"
+        )
+        io.flutter.plugins.googlemobileads.GoogleMobileAdsPlugin.unregisterNativeAdFactory(
+            flutterEngine, "homeScreenNativeAd"
+        )
+        super.cleanUpFlutterEngine(flutterEngine)
     }
 
     override fun onDestroy() {

@@ -221,6 +221,8 @@ class AppState extends ChangeNotifier {
   int _dailyUnlocksCount = 0;
   String _dailyUnlocksDate = '';
   DateTime? _adGracePeriodEndTime;
+  int _dailyNonProductiveOpens = 0;
+  String _dailyNonProductiveOpensDate = '';
 
   // Persistent Claimed Achievement Badges
   Set<String> _claimedBadgeIds = {};
@@ -466,6 +468,84 @@ class AppState extends ChangeNotifier {
   }
 
   List<Map<String, dynamic>> get readingHistory => _readingHistory;
+
+  /// Total frekuensi membuka aplikasi non-produktif hari ini (unlock + open)
+  int get dailyNonProductiveOpens {
+    _syncDailyNonProductiveOpens();
+    return max(_dailyUnlocksCount, _dailyNonProductiveOpens);
+  }
+
+  void _syncDailyNonProductiveOpens() {
+    _syncDailyUnlocksState();
+    final today = DateTime.now().toIso8601String().split('T')[0];
+    if (_dailyNonProductiveOpensDate != today) {
+      _dailyNonProductiveOpens = 0;
+      _dailyNonProductiveOpensDate = today;
+    }
+  }
+
+  /// Tingkat ukuran iklan native di menu apps:
+  /// - 0: Buka 0x -> Tidak ada iklan native
+  /// - 1: Buka 1x -> 1 kotak aplikasi (app icon tile)
+  /// - 2: Buka 2x -> 4 kotak horizontal (1 baris x 4 kolom)
+  /// - 3: Buka 3x -> 2 baris vertikal x 4 kotak horizontal
+  /// - 4: Buka >= 4x -> 3 baris vertikal x 4 kotak horizontal (maksimal)
+  int get nonProductiveAppOpenLevel {
+    final count = dailyNonProductiveOpens;
+    if (count <= 0) return 0;
+    if (count == 1) return 1;
+    if (count == 2) return 2;
+    if (count == 3) return 3;
+    return 4; // Maksimal level 4 (3 baris x 4 kolom)
+  }
+
+  Future<void> recordNonProductiveAppOpen() async {
+    _syncDailyNonProductiveOpens();
+    _dailyNonProductiveOpens =
+        max(_dailyUnlocksCount, _dailyNonProductiveOpens) + 1;
+    await prefs.setInt('dailyNonProductiveOpens', _dailyNonProductiveOpens);
+    await prefs.setString(
+      'dailyNonProductiveOpensDate',
+      _dailyNonProductiveOpensDate,
+    );
+    notifyListeners();
+  }
+
+  @visibleForTesting
+  void setDailyNonProductiveOpensForTesting(int count, {String? date}) {
+    _dailyNonProductiveOpens = count;
+    _dailyNonProductiveOpensDate =
+        date ?? DateTime.now().toIso8601String().split('T')[0];
+    prefs.setInt('dailyNonProductiveOpens', _dailyNonProductiveOpens);
+    prefs.setString(
+      'dailyNonProductiveOpensDate',
+      _dailyNonProductiveOpensDate,
+    );
+    notifyListeners();
+  }
+
+  /// Reset hitungan non-produktif harian untuk keperluan development & testing
+  Future<void> resetDailyNonProductiveState() async {
+    _syncDailyUnlocksState();
+    _dailyUnlocksCount = 0;
+    _dailyNonProductiveOpens = 0;
+    _adGracePeriodEndTime = null;
+    await prefs.setInt('dailyUnlocksCount', 0);
+    await prefs.setInt('dailyNonProductiveOpens', 0);
+    await prefs.remove('adGracePeriodEndTime');
+    notifyListeners();
+  }
+
+  /// Set frekuensi buka non-produktif hari ini (Development & testing level iklan native)
+  Future<void> setDailyNonProductiveOpens(int count) async {
+    _syncDailyNonProductiveOpens();
+    _dailyNonProductiveOpens = count;
+    _dailyUnlocksCount = count;
+    await prefs.setInt('dailyNonProductiveOpens', _dailyNonProductiveOpens);
+    await prefs.setInt('dailyUnlocksCount', _dailyUnlocksCount);
+    notifyListeners();
+  }
+
   String? get lastAttemptedBlockedPackage => _lastAttemptedBlockedPackage;
   String? get lastAttemptedGhadhulBasharPackage =>
       _lastAttemptedGhadhulBasharPackage;
@@ -680,6 +760,17 @@ class AppState extends ChangeNotifier {
             _adGracePeriodEndTime = dt;
           }
         }
+      }
+
+      _dailyNonProductiveOpensDate =
+          prefs.getString('dailyNonProductiveOpensDate') ?? '';
+      if (_dailyNonProductiveOpensDate != today) {
+        _dailyNonProductiveOpens = 0;
+        _dailyNonProductiveOpensDate = today;
+        prefs.setInt('dailyNonProductiveOpens', 0);
+        prefs.setString('dailyNonProductiveOpensDate', today);
+      } else {
+        _dailyNonProductiveOpens = prefs.getInt('dailyNonProductiveOpens') ?? 0;
       }
 
       final historyJson = prefs.getString('readingHistory') ?? '[]';
@@ -4051,6 +4142,15 @@ class AppState extends ChangeNotifier {
     _dailyUnlocksCount++;
     await prefs.setInt('dailyUnlocksCount', _dailyUnlocksCount);
     await prefs.setString('dailyUnlocksDate', _dailyUnlocksDate);
+    _dailyNonProductiveOpens = max(
+      _dailyNonProductiveOpens,
+      _dailyUnlocksCount,
+    );
+    await prefs.setInt('dailyNonProductiveOpens', _dailyNonProductiveOpens);
+    await prefs.setString(
+      'dailyNonProductiveOpensDate',
+      _dailyNonProductiveOpensDate,
+    );
 
     await _recordPointsSpentForDiscipline(effectiveCost);
 
@@ -4603,6 +4703,11 @@ class AppState extends ChangeNotifier {
     _dailyUnlocksDate = date ?? DateTime.now().toIso8601String().split('T')[0];
     prefs.setInt('dailyUnlocksCount', _dailyUnlocksCount);
     prefs.setString('dailyUnlocksDate', _dailyUnlocksDate);
+    if (date != null &&
+        date != DateTime.now().toIso8601String().split('T')[0]) {
+      _dailyNonProductiveOpens = 0;
+      _dailyNonProductiveOpensDate = date;
+    }
     notifyListeners();
   }
 
