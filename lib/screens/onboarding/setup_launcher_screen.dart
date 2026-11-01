@@ -1,0 +1,333 @@
+﻿import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import 'package:android_intent_plus/android_intent.dart';
+import '../../providers/app_state.dart';
+import '../home/home_screen.dart';
+import '../home/accessibility_setup_screen.dart';
+import '../../utils/page_transitions.dart';
+import '../../utils/device_instructions.dart';
+
+class SetupLauncherScreen extends StatefulWidget {
+  final bool isSingleStep;
+  const SetupLauncherScreen({super.key, this.isSingleStep = false});
+
+  @override
+  State<SetupLauncherScreen> createState() => _SetupLauncherScreenState();
+}
+
+class _SetupLauncherScreenState extends State<SetupLauncherScreen> with WidgetsBindingObserver {
+  static const _platform = MethodChannel('com.islamiclauncher/apps');
+  bool _isDefaultLauncher = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _checkDefaultLauncher();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _checkDefaultLauncher();
+    }
+  }
+
+  Future<void> _checkDefaultLauncher() async {
+    try {
+      final bool isDefault = await _platform.invokeMethod('isDefaultLauncher');
+      if (mounted) setState(() => _isDefaultLauncher = isDefault);
+    } catch (_) {}
+  }
+
+  void _openSettings() {
+    const intent = AndroidIntent(action: 'android.settings.HOME_SETTINGS');
+    intent.launch();
+  }
+
+  void _goToNextStep() {
+    final appState = Provider.of<AppState>(context, listen: false);
+    if (widget.isSingleStep) {
+      appState.completeOnboarding();
+      appState.navigatorKey.currentState?.pushAndRemoveUntil(
+        AppPageRoute(child: const HomeScreen()),
+        (route) => false,
+      );
+      return;
+    }
+    appState.navigatorKey.currentState?.push(
+      AppPageRoute(child: const AccessibilitySetupScreen(isOnboarding: true)),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final appState = Provider.of<AppState>(context);
+    final lang = appState.languageCode;
+    final isEn = lang == 'en';
+    final manufacturer = appState.manufacturer;
+    
+    final instructions = DeviceInstructions.getHomeInstructions(manufacturer, lang);
+    final brandDisplay = manufacturer.isNotEmpty 
+        ? manufacturer[0].toUpperCase() + manufacturer.substring(1) 
+        : "Android";
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFB),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              Container(
+                width: double.infinity,
+                color: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
+                child: Column(
+                  children: [
+                    Container(
+                      width: 100,
+                      height: 100,
+                      decoration: BoxDecoration(
+                        color: _isDefaultLauncher ? const Color(0xFFD8F3DC) : const Color(0xFFFEF3C7),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: (_isDefaultLauncher ? Colors.green : Colors.amber).withValues(alpha: 0.1),
+                            blurRadius: 20,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        _isDefaultLauncher ? Icons.home_work_rounded : Icons.home_rounded,
+                        color: _isDefaultLauncher ? const Color(0xFF2D6A4F) : const Color(0xFFD97706),
+                        size: 48,
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                    Text(
+                      _isDefaultLauncher 
+                          ? (isEn ? 'Home App Ready!' : 'Launcher Utama Aktif!') 
+                          : (isEn ? 'Set Default Home' : 'Jadikan Launcher Utama'),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 26, 
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1B4332),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Text(
+                        _isDefaultLauncher
+                            ? (isEn
+                                ? 'Islamic Launcher is now your main home app. You can now use all focus features.'
+                                : 'Islamic Launcher sudah menjadi beranda utama HP Anda. Fitur fokus kini siap digunakan.')
+                            : (isEn
+                                ? 'To block distractions effectively, Islamic Launcher must be your default Home App.'
+                                : 'Agar pembatasan gangguan bekerja maksimal, jadikan aplikasi ini sebagai Beranda Utama Anda.'),
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 15, color: Colors.blueGrey.shade600, height: 1.5),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (!_isDefaultLauncher) ...[
+                      Row(
+                        children: [
+                          const Icon(Icons.touch_app_rounded, size: 18, color: Color(0xFFD97706)),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              isEn ? "STEPS FOR $brandDisplay:" : "LANGKAH UNTUK $brandDisplay:",
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w800, 
+                                letterSpacing: 0.5,
+                                fontSize: 12,
+                                color: Color(0xFFD97706),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.02),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          children: List.generate(instructions.length, (index) {
+                            return _buildFancyStep(index + 1, instructions[index]);
+                          }),
+                        ),
+                      ),
+                    ] else ...[
+                      Center(
+                        child: Column(
+                          children: [
+                            const Icon(Icons.stars_rounded, color: Colors.amber, size: 40),
+                            const SizedBox(height: 12),
+                            Text(
+                              isEn ? "Excellent choice!" : "Pilihan yang tepat!",
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                    
+                    const SizedBox(height: 40),
+                    
+                    Container(
+                      width: double.infinity,
+                      constraints: const BoxConstraints(minHeight: 56),
+                      child: ElevatedButton(
+                        onPressed: _isDefaultLauncher ? null : _openSettings,
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                          backgroundColor: _isDefaultLauncher ? Colors.white : const Color(0xFF1B4332),
+                          foregroundColor: _isDefaultLauncher ? Colors.grey.shade400 : Colors.white,
+                          elevation: _isDefaultLauncher ? 0 : 4,
+                          shadowColor: const Color(0xFF1B4332).withValues(alpha: 0.3),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(18),
+                            side: BorderSide(
+                              color: _isDefaultLauncher ? Colors.grey.shade200 : Colors.transparent,
+                            ),
+                          ),
+                        ),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            _isDefaultLauncher 
+                              ? (isEn ? 'Already Default' : 'Sudah Menjadi Default')
+                              : (isEn ? 'OPEN SETTINGS' : 'BUKA PENGATURAN'),
+                            style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1),
+                          ),
+                        ),
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 24),
+                    
+                    Container(
+                      width: double.infinity,
+                      constraints: const BoxConstraints(minHeight: 56),
+                      child: TextButton(
+                        onPressed: _isDefaultLauncher ? _goToNextStep : null,
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                          foregroundColor: _isDefaultLauncher ? const Color(0xFF1B4332) : Colors.grey.shade400,
+                          backgroundColor: _isDefaultLauncher ? const Color(0xFFD8F3DC) : Colors.transparent,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Flexible(
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  (widget.isSingleStep
+                                          ? (isEn ? 'START USING ISLAMIC LAUNCHER' : 'MULAI GUNAKAN ISLAMIC LAUNCHER')
+                                          : (isEn ? 'NEXT STEP' : 'LANGKAH SELANJUTNYA'))
+                                      .toUpperCase(),
+                                  style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.5),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            const Icon(Icons.arrow_forward_rounded, size: 20),
+                          ],
+                        ),
+                      ),
+                    ),
+                    if (widget.isSingleStep && !_isDefaultLauncher) ...[
+                      const SizedBox(height: 12),
+                      TextButton(
+                        onPressed: _goToNextStep,
+                        child: Text(
+                          isEn ? 'Skip and continue to Home' : 'Lewati dan masuk ke Beranda',
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 48),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFancyStep(int num, String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 24,
+            height: 24,
+            alignment: Alignment.center,
+            decoration: const BoxDecoration(
+              color: Color(0xFFFEF3C7),
+              shape: BoxShape.circle,
+            ),
+            child: Text(
+              "$num", 
+              style: const TextStyle(
+                color: Color(0xFF92400E), 
+                fontSize: 12, 
+                fontWeight: FontWeight.w900,
+              )
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              text, 
+              style: const TextStyle(
+                fontSize: 14, 
+                color: Color(0xFF4B5563),
+                height: 1.4,
+              )
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

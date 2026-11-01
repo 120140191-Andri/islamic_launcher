@@ -1,0 +1,245 @@
+﻿import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'providers/app_state.dart';
+import 'services/streak_notification_service.dart';
+import 'services/ad_service.dart';
+import 'screens/home/home_screen.dart';
+import 'screens/onboarding/language_screen.dart';
+import 'screens/onboarding/mode_selection_screen.dart';
+import 'screens/onboarding/setup_hub_screen.dart';
+import 'screens/onboarding/setup_launcher_screen.dart';
+import 'screens/home/blocked_app_screen.dart';
+import 'screens/home/ghadhul_bashar_overlay.dart';
+import 'screens/home/prohibited_app_overlay.dart';
+import 'screens/home/permission_blocked_overlay.dart';
+import 'widgets/strict_shield_dialog.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Global Error Boundary - Move to main for production safety
+  ErrorWidget.builder = (FlutterErrorDetails details) {
+    debugPrint("Flutter Error: ${details.exception}");
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: Material(
+        color: const Color(0xFF004D40), // Teal 900
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline_rounded, color: Colors.white70, size: 64),
+                const SizedBox(height: 24),
+                const Text(
+                  "Oops! Something went wrong",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  "A minor error occurred. Please try again or restart the app.",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.white70, fontSize: 14),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  };
+
+  // Optimized image cache limits for low-spec and standard Android devices
+  PaintingBinding.instance.imageCache.maximumSizeBytes = 20 * 1024 * 1024;
+  PaintingBinding.instance.imageCache.maximumSize = 200;
+
+  final prefs = await SharedPreferences.getInstance();
+
+  runApp(
+    MultiProvider(
+      providers: [ChangeNotifierProvider(create: (_) => AppState(prefs))],
+      child: const IslamicLauncherApp(),
+    ),
+  );
+}
+
+class IslamicLauncherApp extends StatefulWidget {
+  const IslamicLauncherApp({super.key});
+
+  @override
+  State<IslamicLauncherApp> createState() => _IslamicLauncherAppState();
+}
+
+class _IslamicLauncherAppState extends State<IslamicLauncherApp> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final state = Provider.of<AppState>(context, listen: false);
+      await StreakNotificationService.initialize(navigatorKey: state.navigatorKey);
+      await StreakNotificationService.checkAndSyncReminder(state);
+      await AdService.instance.initialize();
+    });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  Future<bool> didPopRoute() async {
+    final state = Provider.of<AppState>(context, listen: false);
+    if (state.hasActiveOverlay) {
+      state.clearAllOverlays();
+      return true; // Handled: dismiss overlay without popping underlying screen
+    }
+    return false; // Let normal route popping occur
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState lifecycleState) {
+    if (lifecycleState == AppLifecycleState.resumed) {
+      // Safety net: re-check for any pending block events from native
+      // that may have been dropped while Flutter was in background.
+      // This ensures overlays appear even if MethodChannel delivery failed.
+      final state = Provider.of<AppState>(context, listen: false);
+      state.checkPendingNativeBlocks();
+      state.refreshStatus();
+      StreakNotificationService.checkAndSyncReminder(state);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = Provider.of<AppState>(context, listen: false);
+
+    return MaterialApp(
+      navigatorKey: state.navigatorKey,
+      title: 'Islamic Launcher',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF0D5C3A),
+          brightness: Brightness.light,
+        ).copyWith(
+          tertiary: const Color(0xFFD97706),
+          onTertiary: Colors.white,
+          tertiaryContainer: const Color(0xFFFEF3C7),
+          onTertiaryContainer: const Color(0xFF92400E),
+          tertiaryFixed: const Color(0xFFFEF3C7),
+          onTertiaryFixed: const Color(0xFF92400E),
+          tertiaryFixedDim: const Color(0xFFFDE68A),
+          onTertiaryFixedVariant: const Color(0xFF78350F),
+        ),
+        useMaterial3: true,
+        scaffoldBackgroundColor: const Color(0xFFF7FAF8),
+        pageTransitionsTheme: const PageTransitionsTheme(
+          builders: {
+            TargetPlatform.android: ZoomPageTransitionsBuilder(),
+            TargetPlatform.iOS: ZoomPageTransitionsBuilder(),
+          },
+        ),
+        cardTheme: CardThemeData(
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+        ),
+      ),
+      navigatorObservers: [AppState.routeObserver],
+      home: const _HomeScreenSwitcher(),
+      builder: (context, child) {
+        final rootWidget = child ?? const _HomeScreenSwitcher();
+
+        // Clamp text scale factor to prevent layout overflows on extreme accessibility font settings
+        final mediaQuery = MediaQuery.of(context);
+        final clampedMediaQuery = mediaQuery.copyWith(
+          textScaler: mediaQuery.textScaler.clamp(
+            minScaleFactor: 0.85,
+            maxScaleFactor: 1.0,
+          ),
+        );
+
+        return MediaQuery(
+          data: clampedMediaQuery,
+          child: Consumer<AppState>(
+            builder: (context, appState, _) {
+              return PermissionBlockedOverlay(
+                appState: appState,
+                child: Stack(
+                  children: [
+                    rootWidget,
+                    if (!appState.isPassiveMode) ...[
+                      if (appState.lastAttemptedStrictShieldReason?.isNotEmpty ?? false)
+                        StrictShieldOverlay(
+                          reason: appState.lastAttemptedStrictShieldReason!,
+                        )
+                      else if (appState.lastAttemptedProhibitedPackage?.isNotEmpty ?? false)
+                        ProhibitedAppOverlay(
+                          packageName: appState.lastAttemptedProhibitedPackage!,
+                        )
+                      else if (appState.lastAttemptedBlockedPackage?.isNotEmpty ?? false)
+                        BlockedAppScreen(
+                          packageName: appState.lastAttemptedBlockedPackage!,
+                        )
+                      else if (appState.lastAttemptedGhadhulBasharPackage?.isNotEmpty ?? false)
+                        GhadhulBasharOverlay(
+                          packageName: appState.lastAttemptedGhadhulBasharPackage!,
+                        ),
+                    ],
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _HomeScreenSwitcher extends StatelessWidget {
+  const _HomeScreenSwitcher();
+
+  @override
+  Widget build(BuildContext context) {
+    return Selector<AppState, ({bool isReady, bool hasCompletedOnboarding, bool hasSelectedLanguage, bool hasSelectedMode, bool isPassiveMode})>(
+      selector: (context, state) => (
+        isReady: state.isReady,
+        hasCompletedOnboarding: state.hasCompletedOnboarding,
+        hasSelectedLanguage: state.hasSelectedLanguage,
+        hasSelectedMode: state.hasSelectedMode,
+        isPassiveMode: state.isPassiveMode,
+      ),
+      builder: (context, status, _) {
+        if (!status.isReady) {
+          return const Scaffold(
+            backgroundColor: Color(0xFF052C28),
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.mosque_rounded, size: 72, color: Color(0xFF34D399)),
+                  SizedBox(height: 24),
+                  CircularProgressIndicator(color: Color(0xFF34D399)),
+                ],
+              ),
+            ),
+          );
+        }
+        if (status.hasCompletedOnboarding) return const HomeScreen();
+        if (!status.hasSelectedLanguage) return const LanguageScreen();
+        if (!status.hasSelectedMode) return const ModeSelectionScreen(isOnboarding: true);
+        if (status.isPassiveMode) return const SetupLauncherScreen(isSingleStep: true);
+        return const SetupHubScreen(isOnboarding: true);
+      },
+    );
+  }
+}
