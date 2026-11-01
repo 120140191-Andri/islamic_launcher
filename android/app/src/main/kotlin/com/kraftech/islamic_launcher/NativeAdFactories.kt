@@ -20,8 +20,12 @@ class AppTileNativeAdFactory(private val context: Context) : NativeAdFactory {
         badgeView?.text = "Ad"
 
         val icon = nativeAd.icon
-        if (icon != null && iconView != null) {
-            iconView.setImageDrawable(icon.drawable)
+        if (iconView != null) {
+            if (icon != null) {
+                iconView.setImageDrawable(icon.drawable)
+            } else {
+                iconView.setImageResource(android.R.drawable.sym_def_app_icon)
+            }
             view.iconView = iconView
             iconView.visibility = View.VISIBLE
         }
@@ -29,6 +33,7 @@ class AppTileNativeAdFactory(private val context: Context) : NativeAdFactory {
         if (headlineView != null) {
             headlineView.text = nativeAd.headline ?: "Sponsor"
             view.headlineView = headlineView
+            view.callToActionView = headlineView
         }
 
         view.setNativeAd(nativeAd)

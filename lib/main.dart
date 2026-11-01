@@ -13,7 +13,6 @@ import 'screens/home/blocked_app_screen.dart';
 import 'screens/home/ghadhul_bashar_overlay.dart';
 import 'screens/home/prohibited_app_overlay.dart';
 import 'screens/home/permission_blocked_overlay.dart';
-import 'widgets/strict_shield_dialog.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -65,14 +64,6 @@ void main() async {
   PaintingBinding.instance.imageCache.maximumSize = 200;
 
   final prefs = await SharedPreferences.getInstance();
-
-  // Development: sementara set poin ke 999
-  await prefs.setInt('points', 999);
-
-  // Development: uncomment baris berikut jika ingin reset hitungan non-produktif harian otomatis saat cold boot:
-  // await prefs.setInt('dailyUnlocksCount', 0);
-  // await prefs.setInt('dailyNonProductiveOpens', 0);
-  // await prefs.remove('adGracePeriodEndTime');
 
   // Inisialisasi Mobile Ads SDK di awal agar siap dan preloaded lebih cepat
   await AdService.instance.initialize();
@@ -194,13 +185,6 @@ class _IslamicLauncherAppState extends State<IslamicLauncherApp>
                     rootWidget,
                     if (!appState.isPassiveMode) ...[
                       if (appState
-                              .lastAttemptedStrictShieldReason
-                              ?.isNotEmpty ??
-                          false)
-                        StrictShieldOverlay(
-                          reason: appState.lastAttemptedStrictShieldReason!,
-                        )
-                      else if (appState
                               .lastAttemptedProhibitedPackage
                               ?.isNotEmpty ??
                           false)
