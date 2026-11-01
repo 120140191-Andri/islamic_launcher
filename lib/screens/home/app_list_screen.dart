@@ -1858,239 +1858,35 @@ class _PointsBadge extends StatelessWidget {
   final int points;
   const _PointsBadge({required this.points});
 
-  void _showDevMenu(BuildContext context) {
-    final appState = Provider.of<AppState>(context, listen: false);
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) {
-        return Container(
-          decoration: const BoxDecoration(
-            color: Color(0xFF0F5E3B),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black26,
-                blurRadius: 20,
-                offset: Offset(0, -4),
-              ),
-            ],
-          ),
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.white24,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.white12,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(
-                      Icons.developer_mode_rounded,
-                      color: Colors.amber,
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          "Development Tools",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Text(
-                          "Buka Non-Produktif: ${appState.dailyNonProductiveOpens}x (Level ${appState.nonProductiveAppOpenLevel})",
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              const Divider(color: Colors.white12),
-              const SizedBox(height: 8),
-              _buildDevOption(
-                icon: Icons.refresh_rounded,
-                title: "Reset Non-Produktif Harian",
-                subtitle:
-                    "Kembalikan hitungan ke 0 (Level 0 / Bersih Bebas Iklan)",
-                color: const Color(0xFF10B981),
-                onTap: () async {
-                  await appState.resetDailyNonProductiveState();
-                  if (ctx.mounted) Navigator.pop(ctx);
-                },
-              ),
-              const SizedBox(height: 6),
-              _buildDevOption(
-                icon: Icons.filter_1_rounded,
-                title: "Set 1x Buka (Level 1)",
-                subtitle: "Tampilkan iklan native 1 kotak aplikasi",
-                color: Colors.amber,
-                onTap: () async {
-                  await appState.setDailyNonProductiveOpens(1);
-                  if (ctx.mounted) Navigator.pop(ctx);
-                },
-              ),
-              const SizedBox(height: 6),
-              _buildDevOption(
-                icon: Icons.filter_2_rounded,
-                title: "Set 2x Buka (Level 2)",
-                subtitle: "Tampilkan iklan native 4 kotak horizontal",
-                color: Colors.amber,
-                onTap: () async {
-                  await appState.setDailyNonProductiveOpens(2);
-                  if (ctx.mounted) Navigator.pop(ctx);
-                },
-              ),
-              const SizedBox(height: 6),
-              _buildDevOption(
-                icon: Icons.filter_3_rounded,
-                title: "Set 3x Buka (Level 3)",
-                subtitle: "Tampilkan iklan native 2 baris x 4 kotak",
-                color: Colors.amber,
-                onTap: () async {
-                  await appState.setDailyNonProductiveOpens(3);
-                  if (ctx.mounted) Navigator.pop(ctx);
-                },
-              ),
-              const SizedBox(height: 6),
-              _buildDevOption(
-                icon: Icons.filter_4_rounded,
-                title: "Set 4x Buka (Level 4 - Maksimal)",
-                subtitle: "Tampilkan iklan native 3 baris x 4 kotak",
-                color: Colors.amber,
-                onTap: () async {
-                  await appState.setDailyNonProductiveOpens(4);
-                  if (ctx.mounted) Navigator.pop(ctx);
-                },
-              ),
-              const SizedBox(height: 6),
-              _buildDevOption(
-                icon: Icons.stars_rounded,
-                title: "Reset Poin Development ke 999",
-                subtitle: "Isi ulang poin untuk testing",
-                color: Colors.cyanAccent,
-                onTap: () async {
-                  await appState.setPoints(999);
-                  if (ctx.mounted) Navigator.pop(ctx);
-                },
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  static Widget _buildDevOption({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return Material(
-      color: Colors.white.withValues(alpha: 0.08),
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          child: Row(
-            children: [
-              Icon(icon, color: color, size: 22),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      subtitle,
-                      style: const TextStyle(
-                        color: Colors.white60,
-                        fontSize: 11,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return Center(
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () => _showDevMenu(context),
+      child: Container(
+        height: 32,
+        padding: const EdgeInsets.symmetric(horizontal: 9),
+        decoration: BoxDecoration(
+          color: colorScheme.tertiaryContainer,
           borderRadius: BorderRadius.circular(16),
-          child: Container(
-            height: 32,
-            padding: const EdgeInsets.symmetric(horizontal: 9),
-            decoration: BoxDecoration(
-              color: colorScheme.tertiaryContainer,
-              borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.stars_rounded,
+              color: colorScheme.onTertiaryContainer,
+              size: 15,
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.stars_rounded,
-                  color: colorScheme.onTertiaryContainer,
-                  size: 15,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  points.toString(),
-                  style: TextStyle(
-                    color: colorScheme.onTertiaryContainer,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 11.5,
-                  ),
-                ),
-              ],
+            const SizedBox(width: 4),
+            Text(
+              points.toString(),
+              style: TextStyle(
+                color: colorScheme.onTertiaryContainer,
+                fontWeight: FontWeight.bold,
+                fontSize: 11.5,
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );

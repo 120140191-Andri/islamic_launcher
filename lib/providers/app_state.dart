@@ -524,7 +524,8 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Reset hitungan non-produktif harian untuk keperluan development & testing
+  /// Reset hitungan non-produktif harian untuk keperluan testing
+  @visibleForTesting
   Future<void> resetDailyNonProductiveState() async {
     _syncDailyUnlocksState();
     _dailyUnlocksCount = 0;
@@ -536,7 +537,8 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Set frekuensi buka non-produktif hari ini (Development & testing level iklan native)
+  /// Set frekuensi buka non-produktif hari ini (testing level iklan native)
+  @visibleForTesting
   Future<void> setDailyNonProductiveOpens(int count) async {
     _syncDailyNonProductiveOpens();
     _dailyNonProductiveOpens = count;

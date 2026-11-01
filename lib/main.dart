@@ -99,10 +99,6 @@ class _IslamicLauncherAppState extends State<IslamicLauncherApp>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final state = Provider.of<AppState>(context, listen: false);
-      if (state.points < 999) {
-        await state.setPoints(999);
-      }
       await AdService.instance.initialize();
     });
   }
