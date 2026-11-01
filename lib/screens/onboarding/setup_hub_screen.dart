@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:android_intent_plus/android_intent.dart';
@@ -7,6 +7,7 @@ import '../../providers/app_state.dart';
 import '../../utils/page_transitions.dart';
 import '../../utils/translations.dart';
 import '../../utils/device_instructions.dart';
+import '../../widgets/accessibility_disclosure_dialog.dart';
 import '../../widgets/language_selection_dialog.dart';
 import '../home/home_screen.dart';
 
@@ -125,8 +126,15 @@ class _SetupHubScreenState extends State<SetupHubScreen>
     }
   }
 
-  void _openAccessibilitySettings() {
+  Future<void> _openAccessibilitySettings() async {
     final appState = Provider.of<AppState>(context, listen: false);
+    if (!appState.isAccessibilityEnabled) {
+      final accepted = await AccessibilityDisclosureDialog.show(
+        context,
+        lang: appState.languageCode,
+      );
+      if (!accepted || !mounted) return;
+    }
     appState.appBlockService.openAccessibilitySettings();
   }
 

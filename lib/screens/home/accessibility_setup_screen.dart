@@ -1,10 +1,11 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/app_state.dart';
 import 'home_screen.dart';
 import '../../utils/page_transitions.dart';
 import '../../utils/device_instructions.dart';
+import '../../widgets/accessibility_disclosure_dialog.dart';
 
 class AccessibilitySetupScreen extends StatefulWidget {
   final bool isOnboarding;
@@ -291,8 +292,17 @@ class _AccessibilitySetupScreenState extends State<AccessibilitySetupScreen>
                     width: double.infinity,
                     height: 52,
                     child: ElevatedButton(
-                      onPressed: () =>
-                          appState.appBlockService.openAccessibilitySettings(),
+                      onPressed: () async {
+                        if (!_isEnabled) {
+                          final accepted =
+                              await AccessibilityDisclosureDialog.show(
+                            context,
+                            lang: lang,
+                          );
+                          if (!accepted || !mounted) return;
+                        }
+                        appState.appBlockService.openAccessibilitySettings();
+                      },
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         backgroundColor: _isEnabled

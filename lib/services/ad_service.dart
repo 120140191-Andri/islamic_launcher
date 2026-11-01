@@ -31,11 +31,12 @@ class AdService {
   /// Ad Unit ID Native (dibaca dari .env atau fallback ke test ID)
   static String get nativeAdUnitId => EnvConfig.nativeAdUnitId;
 
-  /// Inisialisasi Mobile Ads SDK (Khusus Android)
+  /// Inisialisasi Google UMP Consent & Mobile Ads SDK (Khusus Android)
   Future<void> initialize() async {
     if (_isInitialized) return;
     try {
       if (Platform.isAndroid) {
+        await _requestUmpConsentIfNeeded();
         await MobileAds.instance.initialize();
         _isInitialized = true;
         // Langsung preload 1 iklan reward di background agar saat dibutuhkan sudah siap
@@ -43,6 +44,44 @@ class AdService {
       }
     } catch (e) {
       debugPrint('[AdService] MobileAds init error: $e');
+    }
+  }
+
+  /// Meminta persetujuan UMP (GDPR / EEA / UK / US State Privacy) secara aman
+  Future<void> _requestUmpConsentIfNeeded() async {
+    final completer = Completer<void>();
+    try {
+      final params = ConsentRequestParameters();
+      ConsentInformation.instance.requestConsentInfoUpdate(
+        params,
+        () async {
+          try {
+            ConsentForm.loadAndShowConsentFormIfRequired((formError) {
+              if (formError != null) {
+                debugPrint(
+                  '[AdService] UMP ConsentForm error: ${formError.message}',
+                );
+              }
+              if (!completer.isCompleted) completer.complete();
+            });
+          } catch (e) {
+            debugPrint('[AdService] UMP loadAndShow error: $e');
+            if (!completer.isCompleted) completer.complete();
+          }
+        },
+        (FormError error) {
+          debugPrint(
+            '[AdService] UMP requestConsentInfoUpdate error: ${error.message}',
+          );
+          if (!completer.isCompleted) completer.complete();
+        },
+      );
+      await completer.future.timeout(
+        const Duration(seconds: 4),
+        onTimeout: () {},
+      );
+    } catch (e) {
+      debugPrint('[AdService] UMP exception: $e');
     }
   }
 

@@ -1,4 +1,4 @@
-﻿package com.kraftech.islamic_launcher
+package com.kraftech.islamic_launcher
 
 import android.accessibilityservice.AccessibilityService
 import android.app.ActivityOptions
@@ -141,19 +141,11 @@ class AppBlockService : AccessibilityService() {
         var deviceAdminActivationBypassUntil: Long = 0L
 
         fun allowDeviceAdminActivationTemporarily() {
-            deviceAdminActivationBypassUntil = System.currentTimeMillis() + 90000L
-            Log.d("AppBlockService", "DEVICE ADMIN ACTIVATION BYPASS GRANTED (90s window)")
+            // No-op: Device Admin removed for Google Play compliance
         }
 
         fun isDeviceAdminActive(context: Context?): Boolean {
-            if (context == null) return false
-            return try {
-                val dpm = context.getSystemService(Context.DEVICE_POLICY_SERVICE) as? android.app.admin.DevicePolicyManager
-                val component = ComponentName(context, IslamicDeviceAdminReceiver::class.java)
-                dpm?.isAdminActive(component) == true
-            } catch (_: Exception) {
-                false
-            }
+            return false
         }
 
         fun prepareSupportDeveloperBypass() {
@@ -470,56 +462,29 @@ class AppBlockService : AccessibilityService() {
         }
 
         fun updateStrictModeConfig(context: Context, enabled: Boolean, days: Int, untilMs: Long) {
-            isStrictModeEnabled = enabled
-            strictModeDays = days
-            strictModeUntil = untilMs
-            val now = System.currentTimeMillis()
-            lastKnownTimestamp = now
+            isStrictModeEnabled = false
+            strictModeDays = 0
+            strictModeUntil = 0L
             val prefs = context.getSharedPreferences("app_block_prefs", Context.MODE_PRIVATE)
             prefs.edit()
-                .putBoolean("strict_mode_enabled", enabled)
-                .putInt("strict_mode_days", days)
-                .putLong("strict_mode_until", untilMs)
-                .putLong("last_known_timestamp", now)
+                .putBoolean("strict_mode_enabled", false)
+                .putInt("strict_mode_days", 0)
+                .putLong("strict_mode_until", 0L)
                 .commit()
-            Log.d("AppBlockService", "STRICT MODE CONFIG: enabled=$enabled, days=$days, until=$untilMs")
         }
 
         fun getStrictModeStatus(context: Context): Map<String, Any> {
-            val prefs = context.getSharedPreferences("app_block_prefs", Context.MODE_PRIVATE)
-            val enabled = prefs.getBoolean("strict_mode_enabled", false)
-            val untilMs = prefs.getLong("strict_mode_until", 0L)
-            val days = prefs.getInt("strict_mode_days", 30)
-            val now = System.currentTimeMillis()
-            val isActive = enabled && (now < untilMs)
-            val remainingMs = if (isActive) (untilMs - now).coerceAtLeast(0L) else 0L
             return mapOf(
-                "enabled" to enabled,
-                "isActive" to isActive,
-                "days" to days,
-                "untilMs" to untilMs,
-                "remainingMs" to remainingMs
+                "enabled" to false,
+                "isActive" to false,
+                "days" to 0,
+                "untilMs" to 0L,
+                "remainingMs" to 0L
             )
         }
 
         fun isStrictActive(): Boolean {
-            if (!isStrictModeEnabled) return false
-            val now = System.currentTimeMillis()
-            if (lastKnownTimestamp > 0 && now < (lastKnownTimestamp - 300000L)) {
-                // Time set backwards detected -> keep strict mode securely locked
-                return true
-            }
-            if (now > lastKnownTimestamp) {
-                val shouldPersist = (now - lastKnownTimestamp) > 1800000L // every 30 minutes
-                lastKnownTimestamp = now
-                if (shouldPersist) {
-                    instance?.let { ctx ->
-                        ctx.getSharedPreferences("app_block_prefs", Context.MODE_PRIVATE)
-                            .edit().putLong("last_known_timestamp", now).apply()
-                    }
-                }
-            }
-            return now < strictModeUntil
+            return false
         }
 
         fun isSettingsOrInstallerApp(pkg: String): Boolean {
@@ -2368,10 +2333,10 @@ class AppBlockService : AccessibilityService() {
                 prohibitedPackages.add(pkg.trim().lowercase())
             }
         }
-        isStrictModeEnabled = prefs.getBoolean("strict_mode_enabled", false)
-        strictModeDays = prefs.getInt("strict_mode_days", 30)
-        strictModeUntil = prefs.getLong("strict_mode_until", 0L)
-        lastKnownTimestamp = prefs.getLong("last_known_timestamp", 0L)
+        isStrictModeEnabled = false
+        strictModeDays = 0
+        strictModeUntil = 0L
+        lastKnownTimestamp = 0L
         hasCompletedOnboarding = isOnboardingCompleted(this)
         loadTemporaryAllowed()
     }

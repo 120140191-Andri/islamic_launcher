@@ -4,7 +4,6 @@
     <uses-permission android:name="android.permission.CAMERA"/>
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"/>
     <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES"/>
-    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
     <uses-permission android:name="android.permission.VIBRATE"/>
 
     <!-- Hapus izin penyimpanan bawaan library kamera karena hanya butuh in-memory stream untuk deteksi wajah -->
@@ -56,13 +55,6 @@
             </intent-filter>
         </activity>
 
-        <activity
-            android:name=".DeviceAdminRequestActivity"
-            android:theme="@android:style/Theme.Translucent.NoTitleBar"
-            android:configChanges="orientation|keyboardHidden|screenSize|smallestScreenSize|screenLayout"
-            android:excludeFromRecents="true"
-            android:exported="false" />
-
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data
@@ -80,22 +72,6 @@
                 android:name="android.accessibilityservice"
                 android:resource="@xml/accessibility_service_config" />
         </service>
-
-
-
-        <receiver
-            android:name=".IslamicDeviceAdminReceiver"
-            android:label="Islamic Launcher"
-            android:description="@string/device_admin_description"
-            android:permission="android.permission.BIND_DEVICE_ADMIN"
-            android:exported="true">
-            <meta-data
-                android:name="android.app.device_admin"
-                android:resource="@xml/device_admin" />
-            <intent-filter>
-                <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
-            </intent-filter>
-        </receiver>
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

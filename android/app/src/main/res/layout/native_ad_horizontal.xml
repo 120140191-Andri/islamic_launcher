@@ -90,6 +90,7 @@
             android:id="@+id/ad_call_to_action"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
             android:background="@drawable/ad_button_bg"
             android:paddingLeft="14dp"
             android:paddingRight="14dp"

@@ -1,6 +1,5 @@
 package com.kraftech.islamic_launcher
 
-import android.app.admin.DevicePolicyManager
 import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.ContentValues
@@ -771,20 +770,11 @@ class MainActivity : FlutterActivity() {
     }
 
     private fun isDeviceAdminActive(): Boolean {
-        return AppBlockService.isDeviceAdminActive(this)
+        return false
     }
 
     private fun requestDeviceAdmin() {
-        try {
-            DeviceAdminRequestActivity.start(this)
-        } catch (e: Exception) {
-            Log.e("MainActivity", "requestDeviceAdmin failed: ${e.message}")
-            try {
-                startActivity(Intent(Settings.ACTION_SECURITY_SETTINGS).apply {
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                })
-            } catch (_: Exception) {}
-        }
+        // Device Admin has been removed for Google Play compliance
     }
 
 

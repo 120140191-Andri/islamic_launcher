@@ -209,7 +209,7 @@ class _HomeScreenState extends State<HomeScreen>
           ],
         ),
         content: const Text(
-          'Beberapa aplikasi telah Anda blokir. Agar pemblokiran bekerja di seluruh sistem (termasuk via Play Store), Anda perlu mengaktifkan Layanan Aksesibilitas.',
+          'Beberapa aplikasi non-produktif telah Anda kunci. Agar layar kunci Poin Ibadah dan pengingat Ghadhul Bashar bekerja otomatis, Anda perlu mengaktifkan Layanan Aksesibilitas (AccessibilityService API). Seluruh deteksi diproses secara lokal di perangkat Anda dan tidak ada data pribadi yang dikumpulkan atau dibagikan.',
         ),
         actions: [
           TextButton(
