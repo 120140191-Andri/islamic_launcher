@@ -1,4 +1,4 @@
-﻿class Translations {
+class Translations {
   static const Map<String, Map<String, String>> data = {
     'id': {
       'language_selection': 'Pilih Bahasa',
@@ -280,18 +280,6 @@
       'streak_open_dzikir': 'Buka Menu Dzikir',
       'streak_tab_tilawah': 'Tilawah ({n}h)',
       'streak_tab_dzikir': 'Dzikir ({n}h)',
-      'daily_reminder_title': 'Pengingat Harian (20:00)',
-      'daily_reminder_desc': 'Ingatkan jika belum istiqomah',
-      // Notification content
-      'notif_both_title': 'Jaga Istiqomah Harianmu! 🔥✨',
-      'notif_both_body':
-          'Tinggal beberapa jam sebelum hari berganti. Yuk baca 1 ayat dan Dzikir 33x agar streak-mu tetap menyala!',
-      'notif_quran_title': 'Waktunya Tilawah Hari Ini! 🔥',
-      'notif_quran_body':
-          'Streak tilawahmu sedang berjalan! Yuk luangkan 1 menit membaca minimal 1 ayat hari ini.',
-      'notif_dzikir_title': 'Sempatkan Dzikir Hari Ini! ✨',
-      'notif_dzikir_body':
-          'Yuk tuntaskan minimal 1 putaran (33x) Dzikir tasbih agar streak Dzikirmu tidak terputus.',
       // Home screen streak card labels
       'streak_section_title': 'ISTIQOMAH HARIAN',
       'streak_badges_link': 'Lencana & Hadiah',
@@ -664,18 +652,6 @@
       'streak_open_dzikir': 'Open Dhikr Menu',
       'streak_tab_tilawah': 'Tilawah ({n}d)',
       'streak_tab_dzikir': 'Dhikr ({n}d)',
-      'daily_reminder_title': 'Daily Reminder (20:00)',
-      'daily_reminder_desc': 'Alert if streak is unfinished',
-      // Notification content
-      'notif_both_title': 'Keep Your Daily Streak Alive! 🔥✨',
-      'notif_both_body':
-          'A few hours left before today ends. Read 1 ayah and complete 1 round of dhikr to keep your streak!',
-      'notif_quran_title': 'Time for Daily Tilawah! 🔥',
-      'notif_quran_body':
-          'Your reading streak is active! Take 1 minute to read at least 1 ayah today.',
-      'notif_dzikir_title': 'Time for Daily Dhikr! ✨',
-      'notif_dzikir_body':
-          'Complete at least 1 round (33x) of tasbih dhikr to keep your daily streak.',
       // Home screen streak card labels
       'streak_section_title': 'DAILY STREAK',
       'streak_badges_link': 'Badges & Rewards',
@@ -1055,18 +1031,6 @@
       'streak_open_dzikir': 'Buka Menu Dzikir',
       'streak_tab_tilawah': 'Tilawah ({n}h)',
       'streak_tab_dzikir': 'Dzikir ({n}h)',
-      'daily_reminder_title': 'Peringatan Harian (20:00)',
-      'daily_reminder_desc': 'Ingatkan jika belum istiqomah',
-      // Notification content
-      'notif_both_title': 'Jaga Istiqomah Harianmu! 🔥✨',
-      'notif_both_body':
-          'Tinggal beberapa jam sebelum hari bertukar. Jom baca 1 ayat dan Dzikir 33x agar streak anda kekal!',
-      'notif_quran_title': 'Masa untuk Tilawah Hari Ini! 🔥',
-      'notif_quran_body':
-          'Streak tilawah anda sedang berjalan! Luangkan 1 minit untuk membaca sekurang-kurangnya 1 ayat hari ini.',
-      'notif_dzikir_title': 'Sempatkanlah Berdzikir Hari Ini! ✨',
-      'notif_dzikir_body':
-          'Lengkapkan sekurang-kurangnya 1 pusingan (33x) Dzikir tasbih agar streak Dzikir anda tidak terputus.',
       // Home screen streak card labels
       'streak_section_title': 'ISTIQOMAH HARIAN',
       'streak_badges_link': 'Lencana & Hadiah',
@@ -1417,17 +1381,6 @@
       'streak_open_dzikir': 'افتح قائمة الذكر',
       'streak_tab_tilawah': 'تلاوة ({n})',
       'streak_tab_dzikir': 'ذكر ({n})',
-      'daily_reminder_title': 'تذكير يومي (20:00)',
-      'daily_reminder_desc': 'تنبيه إذا لم يكتمل الورد اليومي',
-      // Notification content
-      'notif_both_title': 'حافظ على استقامتك اليومية! 🔥✨',
-      'notif_both_body':
-          'بضع ساعات متبقية قبل نهاية اليوم. اقرأ آية وأتمم جولة ذكر للحفاظ على وردك!',
-      'notif_quran_title': 'حان وقت التلاوة اليومية! 🔥',
-      'notif_quran_body': 'وردك القرآني فعال! اقرأ آية واحدة على الأقل اليوم.',
-      'notif_dzikir_title': 'حان وقت الذكر اليومي! ✨',
-      'notif_dzikir_body':
-          'أتمم جولة واحدة (33x) من ذكر التسبيح للحفاظ على وردك اليومي.',
       // Home screen streak card labels
       'streak_section_title': 'الاستقامة اليومية',
       'streak_badges_link': 'الشارات والجوائز',
@@ -1786,18 +1739,6 @@
       'streak_open_dzikir': 'Maak Dhikr-kieslys Oop',
       'streak_tab_tilawah': 'Tilawah ({n}d)',
       'streak_tab_dzikir': 'Dhikr ({n}d)',
-      'daily_reminder_title': 'Daaglikse Herinnering (20:00)',
-      'daily_reminder_desc': 'Waarsku as reeks onvoltooid is',
-      // Notification content
-      'notif_both_title': 'Hou Jou Daaglikse Reeks Lewend! 🔥✨',
-      'notif_both_body':
-          'Nog n paar uur voor vandag eindig. Lees 1 vers en doen 1 siklus dhikr om jou reeks te behou!',
-      'notif_quran_title': 'Tyd vir Daaglikse Tilawah! 🔥',
-      'notif_quran_body':
-          'Jou leesreeks is aktief! Neem 1 minuut om ten minste 1 vers vandag te lees.',
-      'notif_dzikir_title': 'Tyd vir Daaglikse Dhikr! ✨',
-      'notif_dzikir_body':
-          'Voltooi ten minste 1 siklus (33x) tasbih dhikr om jou daaglikse reeks te behou.',
       // Home screen streak card labels
       'streak_section_title': 'DAAGLIKSE REEKS',
       'streak_badges_link': 'Kentekens & Belonings',
@@ -2117,18 +2058,6 @@
       'streak_open_dzikir': 'Fungua Menyu ya Dhikri',
       'streak_tab_tilawah': 'Tilawah ({n}d)',
       'streak_tab_dzikir': 'Dhikri ({n}d)',
-      'daily_reminder_title': 'Ukumbusho wa Kila Siku (20:00)',
-      'daily_reminder_desc': 'Tahadharisha kama mfululizo haujamalizika',
-      // Notification content
-      'notif_both_title': 'Dumisha Mfululizo Wako wa Kila Siku! 🔥✨',
-      'notif_both_body':
-          'Saa chache zimebaki kabla ya siku kuisha. Soma aya moja na ukamilishe mzunguko wa dhikri!',
-      'notif_quran_title': 'Wakati wa Tilawah ya Kila Siku! 🔥',
-      'notif_quran_body':
-          'Mfululizo wako wa usomaji ni hai! Chukua dakika 1 kusoma aya moja leo.',
-      'notif_dzikir_title': 'Wakati wa Dhikri ya Kila Siku! ✨',
-      'notif_dzikir_body':
-          'Kamilisha angalau mzunguko 1 (33x) wa dhikri ili kudumisha mfululizo wako.',
       // Home screen streak card labels
       'streak_section_title': 'MFULULIZO WA KILA SIKU',
       'streak_badges_link': 'Alama & Zawadi',

@@ -8,7 +8,6 @@ import '../../utils/translations.dart';
 import '../quran/surah_list_screen.dart';
 import '../quran/surah_detail_screen.dart';
 import '../dzikir/dzikir_screen.dart';
-import '../../services/streak_notification_service.dart';
 import '../../widgets/achievement_certificate_dialog.dart';
 import '../../utils/sunnah_mission_helper.dart';
 
@@ -2037,76 +2036,6 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                   ],
                 ),
               ),
-            ),
-          ),
-          const SizedBox(height: 10),
-
-          // Streak Daily Reminder Toggle Row
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Row(
-                    children: [
-                      Icon(
-                        appState.isStreakReminderEnabled
-                            ? Icons.notifications_active_rounded
-                            : Icons.notifications_off_rounded,
-                        size: 16,
-                        color: appState.isStreakReminderEnabled
-                            ? darkAccent
-                            : colorScheme.onSurfaceVariant,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              _t(lang, 'daily_reminder_title'),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.w600,
-                                color: colorScheme.onSurface,
-                              ),
-                            ),
-                            Text(
-                              _t(lang, 'daily_reminder_desc'),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: 9.5,
-                                color: colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Transform.scale(
-                  scale: 0.8,
-                  child: Switch(
-                    value: appState.isStreakReminderEnabled,
-                    activeThumbColor: darkAccent,
-                    onChanged: (val) async {
-                      if (val) {
-                        await StreakNotificationService.requestPermission();
-                      }
-                      await appState.setStreakReminderEnabled(val);
-                    },
-                  ),
-                ),
-              ],
             ),
           ),
         ],

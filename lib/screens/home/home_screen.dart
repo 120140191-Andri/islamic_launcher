@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
@@ -22,7 +22,6 @@ import '../../utils/quran_progress_helper.dart';
 import '../../utils/sunnah_mission_helper.dart';
 import '../../widgets/language_selection_dialog.dart';
 import '../../widgets/growth_tree_widget.dart';
-import '../../services/streak_notification_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -117,9 +116,6 @@ class _HomeScreenState extends State<HomeScreen>
       if (!mounted) return;
       final appState = Provider.of<AppState>(context, listen: false);
 
-      // Minta izin notifikasi saat pertama kali masuk ke home screen
-      _checkNotificationPermission(appState);
-
       AppListScreen.preload(
         onRawAppsFetched: (raw) {
           if (mounted) appState.syncAppsWithCategories(raw);
@@ -133,18 +129,6 @@ class _HomeScreenState extends State<HomeScreen>
         _checkAccessibilityStatus();
       }).catchError((_) {});
     });
-  }
-
-  Future<void> _checkNotificationPermission(AppState appState) async {
-    if (!appState.hasRequestedNotificationPermission) {
-      await appState.setHasRequestedNotificationPermission(true);
-      final granted = await StreakNotificationService.requestPermission(
-        navigatorKey: appState.navigatorKey,
-      );
-      if (granted && appState.isStreakReminderEnabled) {
-        await StreakNotificationService.checkAndSyncReminder(appState);
-      }
-    }
   }
 
   Future<void> _checkAccessibilityStatus() async {

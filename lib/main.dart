@@ -1,9 +1,8 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'providers/app_state.dart';
-import 'services/streak_notification_service.dart';
 import 'services/ad_service.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/onboarding/language_screen.dart';
@@ -80,9 +79,6 @@ class _IslamicLauncherAppState extends State<IslamicLauncherApp> with WidgetsBin
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final state = Provider.of<AppState>(context, listen: false);
-      await StreakNotificationService.initialize(navigatorKey: state.navigatorKey);
-      await StreakNotificationService.checkAndSyncReminder(state);
       await AdService.instance.initialize();
     });
   }
@@ -112,7 +108,6 @@ class _IslamicLauncherAppState extends State<IslamicLauncherApp> with WidgetsBin
       final state = Provider.of<AppState>(context, listen: false);
       state.checkPendingNativeBlocks();
       state.refreshStatus();
-      StreakNotificationService.checkAndSyncReminder(state);
     }
   }
 
