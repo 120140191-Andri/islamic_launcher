@@ -176,7 +176,7 @@ class Translations {
       'mark_as_configured': 'Tandai Sudah Selesai',
       'action_required': 'Aksi Diperlukan',
       'permission_disabled_desc':
-          'Layanan Aksesibilitas saat ini nonaktif (misalnya setelah Anda menonaktifkannya untuk membuka aplikasi perbankan atau aplikasi yang tidak mengizinkan Aksesibilitas). Silakan pilih salah satu opsi di bawah ini:',
+          'Layanan Aksesibilitas saat ini nonaktif (misalnya setelah Anda menonaktifkannya untuk membuka aplikasi yang tidak mengizinkan Aksesibilitas). Silakan pilih salah satu opsi di bawah ini:',
       'open_setup_hub': 'Buka Pusat Pengaturan',
       'reactivate_accessibility_btn': 'Aktifkan Kembali Aksesibilitas',
       'passive_mode_tradeoff_title': 'Konsekuensi Mode Pasif (Tanpa Aksesibilitas):',
@@ -274,7 +274,7 @@ class Translations {
           'Mode utama yang direkomendasikan untuk menjaga fokus ibadah & pandangan secara optimal. Pengunci aplikasi non-produktif, pengingat Ghadhul Bashar, serta filter konten dewasa dan judi aktif sepenuhnya.',
       'passive_mode_title': 'Mode Pasif',
       'passive_mode_desc':
-          'Beberapa aplikasi (seperti m-banking, dompet digital, atau aplikasi keamanan tertentu) tidak mengizinkan layanan Aksesibilitas aktif sama sekali. Pilih mode ini jika Anda menggunakan aplikasi tersebut agar tetap berjalan tanpa kendala.',
+          'Beberapa aplikasi tidak mengizinkan layanan Aksesibilitas aktif sama sekali. Pilih mode ini jika Anda menggunakan aplikasi tersebut agar tetap berjalan tanpa kendala.',
       'start_passive_mode': 'LANJUTKAN DENGAN MODE PASIF',
       'start_standard_mode': 'MULAI DENGAN MODE STANDAR',
       'next_select_mode': 'SELANJUTNYA: PILIH MODE PENGGUNAAN',
@@ -454,7 +454,7 @@ class Translations {
       'mark_as_configured': 'Mark as Configured',
       'action_required': 'Action Required',
       'permission_disabled_desc':
-          'Accessibility Service is currently disabled (for example, after turning it off to open a banking or security app that forbids Accessibility). Please choose one of the options below:',
+          'Accessibility Service is currently disabled (for example, after turning it off to open an app that does not allow Accessibility). Please choose one of the options below:',
       'open_setup_hub': 'Open Setup Hub',
       'reactivate_accessibility_btn': 'Re-enable Accessibility',
       'passive_mode_tradeoff_title': 'Passive Mode Trade-off (No Accessibility):',
@@ -550,7 +550,7 @@ class Translations {
           'The recommended primary mode for optimal spiritual focus and gaze protection. Non-productive app locking, Ghadhul Bashar reminders, and adult/gambling content filters are fully active.',
       'passive_mode_title': 'Passive Mode',
       'passive_mode_desc':
-          'Some applications (such as mobile banking, financial, or security apps) do not allow Accessibility services to be active at all. Choose this mode if you need full compatibility with those apps.',
+          'Some applications do not allow Accessibility services to be active at all. Choose this mode if you need full compatibility with those apps.',
       'start_passive_mode': 'CONTINUE WITH PASSIVE MODE',
       'start_standard_mode': 'START WITH STANDARD MODE',
       'next_select_mode': 'NEXT: SELECT USAGE MODE',
@@ -732,7 +732,7 @@ class Translations {
       'mark_as_configured': 'Tandakan Selesai',
       'action_required': 'Tindakan Diperlukan',
       'permission_disabled_desc':
-          'Perkhidmatan Kebolehcapaian kini dinyahaktifkan (contohnya selepas anda mematikannya untuk membuka aplikasi perbankan atau aplikasi yang tidak membenarkan Kebolehcapaian). Sila pilih salah satu pilihan di bawah:',
+          'Perkhidmatan Kebolehcapaian kini dinyahaktifkan (contohnya selepas anda mematikannya untuk membuka aplikasi yang tidak membenarkan Kebolehcapaian). Sila pilih salah satu pilihan di bawah:',
       'open_setup_hub': 'Buka Pusat Tetapan',
       'reactivate_accessibility_btn': 'Aktifkan Semula Kebolehcapaian',
       'passive_mode_tradeoff_title': 'Kesan Mod Pasif (Tanpa Kebolehcapaian):',
@@ -830,7 +830,7 @@ class Translations {
           'Mod utama yang disyorkan untuk menjaga fokus ibadah & pandangan secara optimum. Pengunci aplikasi tidak produktif, peringatan Ghadhul Bashar, serta penapis kandungan dewasa dan judi aktif sepenuhnya.',
       'passive_mode_title': 'Mod Pasif',
       'passive_mode_desc':
-          'Sesetengah aplikasi (seperti perbankan mudah alih atau aplikasi keselamatan tertentu) tidak membenarkan perkhidmatan Kebolehcapaian aktif sama sekali. Pilih mod ini jika anda menggunakan aplikasi tersebut agar dapat berjalan tanpa gangguan.',
+          'Sesetengah aplikasi tidak membenarkan perkhidmatan Kebolehcapaian aktif sama sekali. Pilih mod ini jika anda menggunakan aplikasi tersebut agar dapat berjalan tanpa gangguan.',
       'start_passive_mode': 'TERUSKAN DENGAN MOD PASIF',
       'start_standard_mode': 'MULA DENGAN MOD STANDARD',
       'next_select_mode': 'SETERUSNYA: PILIH MOD PENGGUNAAN',
@@ -1007,7 +1007,7 @@ class Translations {
       'mark_as_configured': 'تحديد كمكتمل',
       'action_required': 'إجراء مطلوب',
       'permission_disabled_desc':
-          'خدمة إمكانية الوصول معطلة حالياً (على سبيل المثال، بعد إيقافها لفتح تطبيق بنكي أو تطبيق لا يسمح بتفعيل إمكانية الوصول). يرجى اختيار أحد الخيارات أدناه:',
+          'خدمة إمكانية الوصول معطلة حالياً (على سبيل المثال، بعد إيقافها لفتح تطبيق لا يسمح بتفعيل إمكانية الوصول). يرجى اختيار أحد الخيارات أدناه:',
       'open_setup_hub': 'فتح مركز الإعدادات',
       'reactivate_accessibility_btn': 'إعادة تفعيل إمكانية الوصول',
       'passive_mode_tradeoff_title': 'تأثير الوضع الخامل (بدون إمكانية الوصول):',
@@ -1100,7 +1100,7 @@ class Translations {
           'الوضع الأساسي الموصى به للحفاظ على التركيز في العبادة وغض البصر بشكل مثالي. قفل التطبيقات غير الإنتاجية، وتذكير غض البصر، وفلاتر المحتوى الإباحي والقمار مفعلة بالكامل.',
       'passive_mode_title': 'الوضع الخامل',
       'passive_mode_desc':
-          'بعض التطبيقات (مثل تطبيقات البنوك أو الأمان) لا تسمح بتفعيل خدمات إمكانية الوصول نهائياً. اختر هذا الوضع إذا كنت بحاجة إلى التوافق الكامل مع تلك التطبيقات.',
+          'بعض التطبيقات لا تسمح بتفعيل خدمات إمكانية الوصول نهائياً. اختر هذا الوضع إذا كنت بحاجة إلى التوافق الكامل مع تلك التطبيقات.',
       'start_passive_mode': 'المتابعة مع الوضع الخامل',
       'start_standard_mode': 'البدء بالوضع القياسي',
       'next_select_mode': 'التالي: اختر وضع الاستخدام',
@@ -1280,7 +1280,7 @@ class Translations {
       'mark_as_configured': 'Merk as Voltooi',
       'action_required': 'Aksie Vereis',
       'permission_disabled_desc':
-          'Toeganklikheidsdiens is tans gedeaktiveer (byvoorbeeld nadat jy dit afgeskakel het vir \'n bank- of sekuriteitstoepassing wat nie Toeganklikheid toelaat nie). Kies asseblief een van die opsies hieronder:',
+          'Toeganklikheidsdiens is tans gedeaktiveer (byvoorbeeld nadat jy dit afgeskakel het vir \'n toepassing wat nie Toeganklikheid toelaat nie). Kies asseblief een van die opsies hieronder:',
       'open_setup_hub': 'Maak Instellingshub Oop',
       'reactivate_accessibility_btn': 'Heraktiveer Toeganklikheid',
       'passive_mode_tradeoff_title': 'Gevolg van Passiewe Modus (Geen Toeganklikheid):',
@@ -1376,7 +1376,7 @@ class Translations {
       'start_standard_mode': 'BEGIN MET STANDAARD MODUS',
       'passive_mode_title': 'Passiewe Modus',
       'passive_mode_desc':
-          'Sommige toepassings (soos sekere bank- of sekuriteitstoepassings) laat glad nie toe dat Toeganklikheidsdienste aktief is nie. Kies hierdie modus vir volle versoenbaarheid met sulke toepassings.',
+          'Sommige toepassings laat glad nie toe dat Toeganklikheidsdienste aktief is nie. Kies hierdie modus vir volle versoenbaarheid met sulke toepassings.',
       'start_passive_mode': 'GAAN VOORT MET PASSIEWE MODUS',
     },
     'sw': {
@@ -1555,7 +1555,7 @@ class Translations {
       'mark_as_configured': 'Weka alama kama Tayari',
       'action_required': 'Hatua Inahitajika',
       'permission_disabled_desc':
-          'Huduma ya Ufikiaji imezimwa kwa sasa (kwa mfano, baada ya kuizima ili kufungua programu ya benki au usalama isiyoruhusu Ufikiaji). Tafadhali chagua moja ya chaguo hapa chini:',
+          'Huduma ya Ufikiaji imezimwa kwa sasa (kwa mfano, baada ya kuizima ili kufungua programu isiyoruhusu Ufikiaji). Tafadhali chagua moja ya chaguo hapa chini:',
       'open_setup_hub': 'Fungua Kituo cha Mipangilio',
       'reactivate_accessibility_btn': 'Washa Tena Huduma ya Ufikiaji',
       'passive_mode_tradeoff_title': 'Athari ya Hali Tuli (Bila Ufikiaji):',
@@ -1652,7 +1652,7 @@ class Translations {
       'start_standard_mode': 'ANZA NA HALI YA KAWAIDA',
       'passive_mode_title': 'Hali Tuli',
       'passive_mode_desc':
-          'Baadhi ya programu (kama vile programu za benki au usalama) haziruhusu kabisa huduma za Ufikiaji kuwa hai. Chagua hali hii ikiwa unahitaji utangamano kamili na programu hizo.',
+          'Baadhi ya programu haziruhusu kabisa huduma za Ufikiaji kuwa hai. Chagua hali hii ikiwa unahitaji utangamano kamili na programu hizo.',
       'start_passive_mode': 'ENDELEA NA HALI TULI',
     },
   };
