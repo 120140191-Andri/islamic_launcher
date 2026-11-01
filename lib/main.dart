@@ -58,6 +58,14 @@ void main() async {
 
   final prefs = await SharedPreferences.getInstance();
 
+  // Kembalikan poin development ke normal (0) jika sebelumnya diset 9999
+  if ((prefs.getInt('points') ?? 0) >= 9000) {
+    await prefs.setInt('points', 0);
+  }
+
+  // Inisialisasi Mobile Ads SDK di awal agar siap dan preloaded lebih cepat
+  await AdService.instance.initialize();
+
   runApp(
     MultiProvider(
       providers: [ChangeNotifierProvider(create: (_) => AppState(prefs))],

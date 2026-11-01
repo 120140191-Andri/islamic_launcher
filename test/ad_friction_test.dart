@@ -1,4 +1,4 @@
-﻿import 'package:flutter/services.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:islamic_launcher/providers/app_state.dart';
@@ -43,7 +43,7 @@ void main() {
   });
 
   group('Ad Friction & Grace Period Tests (Aturan Iklan Pembatas)', () {
-    test('1. Buka non-produktif < 3x tidak mewajibkan iklan', () {
+    test('1. Buka non-produktif < 2x tidak mewajibkan iklan (Buka ke-1 & 2)', () {
       appState.setDailyUnlocksForTesting(0);
       expect(appState.dailyUnlocksCount, 0);
       expect(appState.shouldShowAdBeforeUnlock, false);
@@ -51,38 +51,37 @@ void main() {
       appState.setDailyUnlocksForTesting(1);
       expect(appState.dailyUnlocksCount, 1);
       expect(appState.shouldShowAdBeforeUnlock, false);
-
-      appState.setDailyUnlocksForTesting(2);
-      expect(appState.dailyUnlocksCount, 2);
-      expect(appState.shouldShowAdBeforeUnlock, false);
     });
 
-    test('2. Buka non-produktif >= 3x mewajibkan iklan jika belum ada tiket santai aktif', () {
-      appState.setDailyUnlocksForTesting(3);
-      expect(appState.dailyUnlocksCount, 3);
+    test('2. Buka non-produktif >= 2x mewajibkan iklan jika belum ada tiket santai aktif (Buka ke-3 dst)', () {
+      appState.setDailyUnlocksForTesting(2);
+      expect(appState.dailyUnlocksCount, 2);
       expect(appState.isAdGracePeriodActive, false);
+      expect(appState.shouldShowAdBeforeUnlock, true);
+
+      appState.setDailyUnlocksForTesting(3);
       expect(appState.shouldShowAdBeforeUnlock, true);
 
       appState.setDailyUnlocksForTesting(5);
       expect(appState.shouldShowAdBeforeUnlock, true);
     });
 
-    test('3. Menonton iklan mengaktifkan tiket bebas iklan 10 menit (Global Pass)', () async {
+    test('3. Menonton iklan mengaktifkan masa bebas iklan 3 menit (Global Pass)', () async {
       appState.setDailyUnlocksForTesting(3);
       expect(appState.shouldShowAdBeforeUnlock, true);
 
-      // Simulasi user menonton video dan mengaktifkan tiket 10 menit
-      await appState.activateAdGracePeriod(durationMinutes: 10);
+      // Simulasi user menonton video dan mengaktifkan masa bebas iklan 3 menit
+      await appState.activateAdGracePeriod(durationMinutes: 3);
 
       expect(appState.isAdGracePeriodActive, true);
-      expect(appState.remainingAdGracePeriodSeconds, greaterThan(500));
-      expect(appState.remainingAdGracePeriodMinutes, 10);
+      expect(appState.remainingAdGracePeriodSeconds, greaterThan(150));
+      expect(appState.remainingAdGracePeriodMinutes, 3);
 
-      // Selama tiket aktif, tidak perlu nonton iklan lagi walaupun count >= 3
+      // Selama masa aktif, tidak perlu nonton iklan lagi walaupun count >= 3
       expect(appState.shouldShowAdBeforeUnlock, false);
     });
 
-    test('4. Ketika tiket 10 menit kadaluarsa, wajib nonton iklan lagi', () {
+    test('4. Ketika masa bebas iklan 3 menit kadaluarsa, wajib nonton iklan lagi', () {
       appState.setDailyUnlocksForTesting(4);
 
       // Set masa aktif yang sudah lewat 1 detik lalu
@@ -100,6 +99,18 @@ void main() {
       // Tanggal hari ini berbeda, maka count reset ke 0
       expect(appState.dailyUnlocksCount, 0);
       expect(appState.shouldShowAdBeforeUnlock, false);
+    });
+
+    test('6. Ketika iklan gagal tayang (offline / no fill), masa bebas iklan TIDAK diaktifkan', () {
+      appState.setDailyUnlocksForTesting(2);
+      expect(appState.shouldShowAdBeforeUnlock, true);
+
+      // Simulasi bypass offline: activateAdGracePeriod TIDAK dipanggil
+      expect(appState.isAdGracePeriodActive, false);
+      expect(appState.remainingAdGracePeriodSeconds, 0);
+
+      // Karena tiket tidak aktif, pembukaan selanjutnya tetap berstatus wajib iklan
+      expect(appState.shouldShowAdBeforeUnlock, true);
     });
   });
 }

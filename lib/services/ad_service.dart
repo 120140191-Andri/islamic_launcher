@@ -11,6 +11,16 @@ class AdService {
   bool _isInitialized = false;
   RewardedAd? _rewardedAd;
   bool _isLoadingRewarded = false;
+  Completer<RewardedAd?>? _loadingCompleter;
+  int _loadAttempts = 0;
+  static const int _maxLoadAttempts = 3;
+  String? _lastError;
+
+  /// Status apakah iklan rewarded sedang ada di memori dan siap ditayangkan seketika
+  bool get isRewardedAdReady => _rewardedAd != null;
+
+  /// Pesan error terakhir saat memuat / menampilkan iklan
+  String? get lastError => _lastError;
 
   /// Ad Unit ID Rewarded (dibaca dari .env atau fallback ke test ID)
   static String get rewardedAdUnitId => EnvConfig.rewardedAdUnitId;
@@ -39,6 +49,8 @@ class AdService {
     if (!Platform.isAndroid) return;
 
     _isLoadingRewarded = true;
+    _loadingCompleter ??= Completer<RewardedAd?>();
+
     RewardedAd.load(
       adUnitId: rewardedAdUnitId,
       request: const AdRequest(),
@@ -47,11 +59,32 @@ class AdService {
           debugPrint('[AdService] Rewarded ad loaded successfully.');
           _rewardedAd = ad;
           _isLoadingRewarded = false;
+          _loadAttempts = 0;
+          if (_loadingCompleter != null && !_loadingCompleter!.isCompleted) {
+            _loadingCompleter!.complete(ad);
+          }
+          _loadingCompleter = null;
         },
         onAdFailedToLoad: (error) {
-          debugPrint('[AdService] Rewarded ad failed to load: ${error.message} (code: ${error.code})');
+          _lastError = '${error.message} (Code: ${error.code})';
+          debugPrint('[AdService] Rewarded ad failed to load: $_lastError');
           _rewardedAd = null;
           _isLoadingRewarded = false;
+          if (_loadingCompleter != null && !_loadingCompleter!.isCompleted) {
+            _loadingCompleter!.complete(null);
+          }
+          _loadingCompleter = null;
+
+          _loadAttempts++;
+          if (_loadAttempts < _maxLoadAttempts) {
+            final delay = Duration(seconds: 2 * _loadAttempts);
+            debugPrint(
+              '[AdService] Will retry loading rewarded ad in $delay (attempt $_loadAttempts/$_maxLoadAttempts)',
+            );
+            Future.delayed(delay, () {
+              preloadRewardedAd();
+            });
+          }
         },
       ),
     );
@@ -61,49 +94,54 @@ class AdService {
   /// Return `true` jika iklan berhasil ditayangkan dan pengguna menyelesaikan tontonan (reward earned).
   /// Return `false` jika iklan tidak tersedia / gagal tayang / offline (sehingga caller bisa langsung bypass).
   Future<bool> showRewardedAd({
-    Duration timeout = const Duration(seconds: 4),
+    Duration timeout = const Duration(seconds: 8),
+    VoidCallback? onAdReadyToShow,
   }) async {
     if (!Platform.isAndroid) return false;
 
-    // Jika belum ada iklan yang siap, coba tunggu sebentar atau load cepat
-    if (_rewardedAd == null) {
-      preloadRewardedAd();
-      final completer = Completer<bool>();
-      Timer? timer;
-      
-      // Tunggu hingga ad loaded atau timeout
-      timer = Timer(timeout, () {
-        if (!completer.isCompleted) {
-          debugPrint('[AdService] Rewarded ad wait timeout -> bypass ke unlock biasa.');
-          completer.complete(false);
+    // Pastikan Mobile Ads SDK sudah terinisialisasi
+    if (!_isInitialized) {
+      await initialize();
+    }
+
+    // Ambil iklan yang sudah siap, atau tunggu iklan yang sedang / baru dimuat
+    RewardedAd? ad = _rewardedAd;
+    _rewardedAd = null; // Consume
+
+    if (ad == null) {
+      if (!_isLoadingRewarded) {
+        _loadAttempts = 0; // reset untuk permintaan baru dari user
+        preloadRewardedAd();
+      }
+
+      final completer = _loadingCompleter;
+      if (completer != null) {
+        try {
+          ad = await completer.future.timeout(
+            timeout,
+            onTimeout: () {
+              _lastError = 'Timeout ($timeout) memuat video iklan';
+              debugPrint('[AdService] Rewarded ad load timeout ($timeout).');
+              return null;
+            },
+          );
+        } catch (e) {
+          _lastError = 'Error waiting for rewarded ad: $e';
+          debugPrint('[AdService] Error waiting for rewarded ad: $e');
+          ad = null;
         }
-      });
-
-      // Poll setiap 300ms untuk cek apakah sudah terload
-      final pollTimer = Timer.periodic(const Duration(milliseconds: 300), (t) {
-        if (_rewardedAd != null) {
-          t.cancel();
-          timer?.cancel();
-          if (!completer.isCompleted) completer.complete(true);
-        } else if (!_isLoadingRewarded) {
-          // Gagal load (offline/no fill)
-          t.cancel();
-          timer?.cancel();
-          if (!completer.isCompleted) completer.complete(false);
-        }
-      });
-
-      final isReady = await completer.future;
-      pollTimer.cancel();
-      timer.cancel();
-
-      if (!isReady || _rewardedAd == null) {
-        return false;
       }
     }
 
-    final ad = _rewardedAd!;
-    _rewardedAd = null; // Consume ad
+    if (ad == null) {
+      debugPrint(
+        '[AdService] No rewarded ad available to show. Reason: $_lastError',
+      );
+      return false;
+    }
+
+    // Panggil callback sebelum native full screen ad mengambil alih tampilan
+    onAdReadyToShow?.call();
 
     final adCompleter = Completer<bool>();
     bool earnedReward = false;
@@ -121,7 +159,8 @@ class AdService {
         }
       },
       onAdFailedToShowFullScreenContent: (ad, error) {
-        debugPrint('[AdService] Rewarded ad failed to show: ${error.message}');
+        _lastError = 'Show failed: ${error.message} (Code: ${error.code})';
+        debugPrint('[AdService] Rewarded ad failed to show: $_lastError');
         ad.dispose();
         preloadRewardedAd();
         if (!adCompleter.isCompleted) {
@@ -133,11 +172,14 @@ class AdService {
     try {
       await ad.show(
         onUserEarnedReward: (adWithoutView, reward) {
-          debugPrint('[AdService] User earned reward: ${reward.amount} ${reward.type}');
+          debugPrint(
+            '[AdService] User earned reward: ${reward.amount} ${reward.type}',
+          );
           earnedReward = true;
         },
       );
     } catch (e) {
+      _lastError = 'Exception showing rewarded ad: $e';
       debugPrint('[AdService] Error showing rewarded ad: $e');
       preloadRewardedAd();
       return false;

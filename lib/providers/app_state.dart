@@ -75,7 +75,8 @@ class AppState extends ChangeNotifier {
 
   static String getDefaultLanguageCode() {
     try {
-      final sysLang = ui.PlatformDispatcher.instance.locale.languageCode.toLowerCase();
+      final sysLang = ui.PlatformDispatcher.instance.locale.languageCode
+          .toLowerCase();
       const supported = ['id', 'ms', 'af', 'sw', 'ar', 'en'];
       if (supported.contains(sysLang)) {
         return sysLang;
@@ -129,7 +130,8 @@ class AppState extends ChangeNotifier {
   int get strictModeDays => _strictModeDays;
   int get strictModeUntilMs => _strictModeUntilMs;
   bool get isDeviceAdminActive => _isDeviceAdminActive;
-  String? get lastAttemptedStrictShieldReason => _lastAttemptedStrictShieldReason;
+  String? get lastAttemptedStrictShieldReason =>
+      _lastAttemptedStrictShieldReason;
   bool get isStandardReflectionActive => _isStandardReflectionActive;
 
   bool get isStrictActiveNow {
@@ -143,7 +145,7 @@ class AppState extends ChangeNotifier {
     final diff = _strictModeUntilMs - DateTime.now().millisecondsSinceEpoch;
     return diff > 0 ? Duration(milliseconds: diff) : Duration.zero;
   }
-  
+
   final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
   // Gamification & Progression Fields
@@ -168,17 +170,21 @@ class AppState extends ChangeNotifier {
     if (_dailyDzikirDate != today) return 0;
     return _dailyDzikirCount;
   }
+
   Map<String, int> get dailyDzikirPresetRounds {
     final today = DateTime.now().toIso8601String().split('T')[0];
     if (_dailyDzikirDate != today) return {};
     return Map.unmodifiable(_dailyDzikirPresetRounds);
   }
+
   int getDzikirPresetRounds(String dzikirTitle) {
     final today = DateTime.now().toIso8601String().split('T')[0];
     if (_dailyDzikirDate != today) return 0;
     return _dailyDzikirPresetRounds[dzikirTitle] ?? 0;
   }
-  bool isDzikirPresetReadToday(String dzikirTitle) => getDzikirPresetRounds(dzikirTitle) > 0;
+
+  bool isDzikirPresetReadToday(String dzikirTitle) =>
+      getDzikirPresetRounds(dzikirTitle) > 0;
   int get totalDzikirCount => _totalDzikirCount;
   bool isSurahCompletedInThisCycle(int surahNumber) =>
       _completedSurahsThisCycle.contains(surahNumber);
@@ -255,7 +261,6 @@ class AppState extends ChangeNotifier {
   int get totalHadithsCount => _hadithData.length;
   int get completedHadithsCount => _readHadithIds.length;
 
-
   String get languageCode => _languageCode;
   bool get isIndonesian => isIndonesianUser(_languageCode);
   String get supportUrl => getSupportUrl(_languageCode);
@@ -272,10 +277,15 @@ class AppState extends ChangeNotifier {
     final now = DateTime.now();
     final today = now.toIso8601String().split('T')[0];
     if (_lastQuranReadDate == today) return _quranDailyStreak;
-    final yesterday = DateTime(now.year, now.month, now.day - 1).toIso8601String().split('T')[0];
+    final yesterday = DateTime(
+      now.year,
+      now.month,
+      now.day - 1,
+    ).toIso8601String().split('T')[0];
     if (_lastQuranReadDate == yesterday) return _quranDailyStreak;
     return 0;
   }
+
   int get rawQuranDailyStreak => _quranDailyStreak;
   int get maxQuranDailyStreak => _maxQuranDailyStreak;
   String get lastQuranReadDate => _lastQuranReadDate;
@@ -285,10 +295,15 @@ class AppState extends ChangeNotifier {
     final now = DateTime.now();
     final today = now.toIso8601String().split('T')[0];
     if (_lastDzikirDate == today) return _dzikirDailyStreak;
-    final yesterday = DateTime(now.year, now.month, now.day - 1).toIso8601String().split('T')[0];
+    final yesterday = DateTime(
+      now.year,
+      now.month,
+      now.day - 1,
+    ).toIso8601String().split('T')[0];
     if (_lastDzikirDate == yesterday) return _dzikirDailyStreak;
     return 0;
   }
+
   int get rawDzikirDailyStreak => _dzikirDailyStreak;
   int get maxDzikirDailyStreak => _maxDzikirDailyStreak;
   String get lastDzikirDate => _lastDzikirDate;
@@ -297,11 +312,13 @@ class AppState extends ChangeNotifier {
     _checkDailyDiscipline();
     return _disciplineDailyStreak;
   }
+
   int get rawDisciplineDailyStreak => _disciplineDailyStreak;
   int get maxDisciplineDailyStreak {
     _checkDailyDiscipline();
     return _maxDisciplineDailyStreak;
   }
+
   int get dailyPointsSpent {
     _checkDailyDiscipline();
     return _dailyPointsSpent;
@@ -326,7 +343,8 @@ class AppState extends ChangeNotifier {
   List<dynamic> get hadithData {
     if (_hadithData.isEmpty) return const [];
     final today = DateTime.now().toIso8601String().split('T')[0];
-    if (_cachedShuffledHadithData.isNotEmpty && _cachedHadithShuffleDate == today) {
+    if (_cachedShuffledHadithData.isNotEmpty &&
+        _cachedHadithShuffleDate == today) {
       return _cachedShuffledHadithData;
     }
     final seed = today.hashCode;
@@ -336,9 +354,12 @@ class AppState extends ChangeNotifier {
     _cachedHadithShuffleDate = today;
     return _cachedShuffledHadithData;
   }
+
   int get khatmCount => _khatmCount;
-  double get maqamBoostMultiplier => QuranProgressHelper.getMaqamBoostMultiplier(_khatmCount);
-  int get maqamBoostPercent => QuranProgressHelper.getMaqamBoostPercent(_khatmCount);
+  double get maqamBoostMultiplier =>
+      QuranProgressHelper.getMaqamBoostMultiplier(_khatmCount);
+  int get maqamBoostPercent =>
+      QuranProgressHelper.getMaqamBoostPercent(_khatmCount);
   int get maqamLevel => QuranProgressHelper.getMaqamLevel(_khatmCount);
 
   // Daily 10-Ayahs Boost Getters & Logic
@@ -399,7 +420,7 @@ class AppState extends ChangeNotifier {
     return 100;
   }
 
-  /// Memeriksa apakah tiket bebas iklan 10 menit sedang aktif secara global
+  /// Memeriksa apakah masa bebas iklan 3 menit sedang aktif secara global
   bool get isAdGracePeriodActive {
     if (_adGracePeriodEndTime == null) return false;
     return DateTime.now().isBefore(_adGracePeriodEndTime!);
@@ -419,14 +440,14 @@ class AppState extends ChangeNotifier {
   }
 
   /// Syarat memunculkan iklan sebelum buka aplikasi non-produktif:
-  /// Pengguna sudah membuka app non-produktif >= 3 kali hari ini DAN tiket bebas iklan tidak aktif
+  /// Pengguna sudah membuka app non-produktif >= 2 kali sebelumnya hari ini (artinya saat membuka ke-3 dst) DAN tiket bebas iklan tidak aktif
   bool get shouldShowAdBeforeUnlock {
     _syncDailyUnlocksState();
-    return _dailyUnlocksCount >= 3 && !isAdGracePeriodActive;
+    return _dailyUnlocksCount >= 2 && !isAdGracePeriodActive;
   }
 
-  /// Mengaktifkan tiket bebas iklan 10 menit setelah menonton iklan rewarded
-  Future<void> activateAdGracePeriod({int durationMinutes = 10}) async {
+  /// Mengaktifkan masa bebas iklan (grace period) 3 menit setelah menonton iklan rewarded
+  Future<void> activateAdGracePeriod({int durationMinutes = 3}) async {
     final endTime = DateTime.now().add(Duration(minutes: durationMinutes));
     _adGracePeriodEndTime = endTime;
     await prefs.setInt('adGracePeriodEndTime', endTime.millisecondsSinceEpoch);
@@ -443,10 +464,13 @@ class AppState extends ChangeNotifier {
     }
     notifyListeners();
   }
+
   List<Map<String, dynamic>> get readingHistory => _readingHistory;
   String? get lastAttemptedBlockedPackage => _lastAttemptedBlockedPackage;
-  String? get lastAttemptedGhadhulBasharPackage => _lastAttemptedGhadhulBasharPackage;
-  String? get lastAttemptedGhadhulBasharExtra => _lastAttemptedGhadhulBasharExtra;
+  String? get lastAttemptedGhadhulBasharPackage =>
+      _lastAttemptedGhadhulBasharPackage;
+  String? get lastAttemptedGhadhulBasharExtra =>
+      _lastAttemptedGhadhulBasharExtra;
   bool get isAccessibilityEnabled => _isAccessibilityEnabled;
   bool get isDefaultLauncher => _isDefaultLauncher;
   bool get hasSeenAccessibilitySetup => _hasSeenAccessibilitySetup;
@@ -493,361 +517,409 @@ class AppState extends ChangeNotifier {
 
   void _init() async {
     try {
-    _languageCode = prefs.getString('languageCode') ?? getDefaultLanguageCode();
-    _hasSelectedLanguage = prefs.getBool('hasSelectedLanguage') ?? false;
-    _hasCompletedOnboarding = prefs.getBool('hasCompletedOnboarding') ?? false;
-    appBlockService.setOnboardingCompleted(_hasCompletedOnboarding);
-    _points = prefs.getInt('points') ?? 0;
-    if (_points < 0) {
-      _points = 0;
-      await prefs.setInt('points', 0);
-    }
-    final savedUserNonProductive = prefs.getStringList('userNonProductiveApps') ?? [];
-    _userNonProductiveApps = savedUserNonProductive.map((e) => e.trim().toLowerCase()).toSet();
-    final savedCustom = prefs.getStringList('customProductiveApps') ?? [];
-    _customProductiveApps = savedCustom.map((e) => e.trim().toLowerCase()).toSet();
-    final savedBlocked = prefs.getStringList('blockedApps') ?? [];
-    _blockedApps = savedBlocked
-        .where((pkg) => !isProductiveApp(pkg, ''))
-        .toSet();
-    // Ensure Facebook is restored to blocked apps if not productive
-    for (final fbPkg in ['com.facebook.katana', 'com.facebook.lite']) {
-      if (!isProductiveApp(fbPkg, 'Facebook')) {
-        _blockedApps.add(fbPkg);
+      _languageCode =
+          prefs.getString('languageCode') ?? getDefaultLanguageCode();
+      _hasSelectedLanguage = prefs.getBool('hasSelectedLanguage') ?? false;
+      _hasCompletedOnboarding =
+          prefs.getBool('hasCompletedOnboarding') ?? false;
+      appBlockService.setOnboardingCompleted(_hasCompletedOnboarding);
+      _points = prefs.getInt('points') ?? 0;
+      if (_points < 0) {
+        _points = 0;
+        await prefs.setInt('points', 0);
       }
-    }
-    if (_blockedApps.length != savedBlocked.length) {
-      prefs.setStringList('blockedApps', _blockedApps.toList());
-    }
-    _lastReadAyat = prefs.getString('lastReadAyat') ?? '';
-    _lastReadSurah = prefs.getString('lastReadSurah') ?? '';
-    _lastReadAyahNumber = prefs.getInt('lastReadAyahNumber') ?? 0;
-    _hasSeenAccessibilitySetup = prefs.getBool('hasSeenAccessibilitySetup') ?? false;
-    _hasAcknowledgedAutostart = prefs.getBool('hasAcknowledgedAutostart') ?? false;
-    _isStrictMode = prefs.getBool('is_strict_mode') ?? true;
-    _strictModeDays = prefs.getInt('strict_mode_days') ?? 30;
-    _strictModeUntilMs = prefs.getInt('strict_mode_until_ms') ?? 0;
-    _launcherMode = prefs.getString('launcher_mode') ?? (_isStrictMode ? 'strict' : 'standard');
-    _hasSelectedMode = prefs.getBool('has_selected_mode') ?? _hasCompletedOnboarding;
-
-    // Auto-transition to Standard Mode if Strict Mode duration has expired
-    final nowInit = DateTime.now().millisecondsSinceEpoch;
-    if (_isStrictMode && _strictModeUntilMs > 0 && nowInit >= _strictModeUntilMs) {
-      _isStrictMode = false;
-      _launcherMode = 'standard';
-      _strictModeUntilMs = 0;
-      await prefs.setBool('is_strict_mode', false);
-      await prefs.setString('launcher_mode', 'standard');
-      await prefs.setInt('strict_mode_until_ms', 0);
-    }
-    
-    _highestSurahIndex = prefs.getInt('highestSurahIndex') ?? 0;
-    _highestAyahIndex = prefs.getInt('highestAyahIndex') ?? -1;
-    _khatmCount = prefs.getInt('khatmCount') ?? 0;
-
-    _quranDailyStreak = prefs.getInt('quranDailyStreak') ?? 0;
-    _maxQuranDailyStreak = prefs.getInt('maxQuranDailyStreak') ?? _quranDailyStreak;
-    _lastQuranReadDate = prefs.getString('lastQuranReadDate') ?? '';
-
-    _dzikirDailyStreak = prefs.getInt('dzikirDailyStreak') ?? 0;
-    _maxDzikirDailyStreak = prefs.getInt('maxDzikirDailyStreak') ?? _dzikirDailyStreak;
-    _lastDzikirDate = prefs.getString('lastDzikirDate') ?? '';
-
-    _disciplineDailyStreak = prefs.getInt('disciplineDailyStreak') ?? 0;
-    _maxDisciplineDailyStreak = prefs.getInt('maxDisciplineDailyStreak') ?? _disciplineDailyStreak;
-    _lastDisciplineDate = prefs.getString('lastDisciplineDate') ?? '';
-    _dailyPointsSpent = prefs.getInt('dailyPointsSpent') ?? 0;
-    _dailyPointsSpentDate = prefs.getString('dailyPointsSpentDate') ?? '';
-    _checkDailyDiscipline();
-
-    final savedClaimedBadges = prefs.getStringList('claimedBadgeIds') ?? [];
-    _claimedBadgeIds = savedClaimedBadges.toSet();
-
-    _userName = prefs.getString('userName') ?? '';
-    final savedCompletedSurahs = prefs.getStringList('completedSurahsThisCycle') ?? [];
-    _completedSurahsThisCycle = savedCompletedSurahs.map((e) => int.tryParse(e) ?? 0).where((e) => e > 0).toSet();
-
-    final today = DateTime.now().toIso8601String().split('T')[0];
-    _dailyDzikirDate = prefs.getString('dailyDzikirDate') ?? '';
-    if (_dailyDzikirDate != today) {
-      _dailyDzikirRounds = 0;
-      _dailyDzikirPoints = 0;
-      _dailyDzikirCount = 0;
-      _dailyDzikirPresetRounds = {};
-      _dailyDzikirDate = today;
-      prefs.setInt('dailyDzikirRounds', 0);
-      prefs.setInt('dailyDzikirPoints', 0);
-      prefs.setInt('dailyDzikirCount', 0);
-      prefs.setString('dailyDzikirDate', today);
-      prefs.setString('dailyDzikirPresetRounds', '{}');
-    } else {
-      _dailyDzikirRounds = prefs.getInt('dailyDzikirRounds') ?? 0;
-      _dailyDzikirPoints = prefs.getInt('dailyDzikirPoints') ?? 0;
-      _dailyDzikirCount = prefs.getInt('dailyDzikirCount') ?? 0;
-      final rawPresetRounds = prefs.getString('dailyDzikirPresetRounds');
-      if (rawPresetRounds != null && rawPresetRounds.isNotEmpty) {
-        try {
-          final decoded = jsonDecode(rawPresetRounds) as Map<String, dynamic>;
-          _dailyDzikirPresetRounds = decoded.map((k, v) => MapEntry(k, (v as num).toInt()));
-        } catch (_) {
-          _dailyDzikirPresetRounds = {};
+      final savedUserNonProductive =
+          prefs.getStringList('userNonProductiveApps') ?? [];
+      _userNonProductiveApps = savedUserNonProductive
+          .map((e) => e.trim().toLowerCase())
+          .toSet();
+      final savedCustom = prefs.getStringList('customProductiveApps') ?? [];
+      _customProductiveApps = savedCustom
+          .map((e) => e.trim().toLowerCase())
+          .toSet();
+      final savedBlocked = prefs.getStringList('blockedApps') ?? [];
+      _blockedApps = savedBlocked
+          .where((pkg) => !isProductiveApp(pkg, ''))
+          .toSet();
+      // Ensure Facebook is restored to blocked apps if not productive
+      for (final fbPkg in ['com.facebook.katana', 'com.facebook.lite']) {
+        if (!isProductiveApp(fbPkg, 'Facebook')) {
+          _blockedApps.add(fbPkg);
         }
       }
-    }
-
-    final lastHadithDate = prefs.getString('lastHadithDate') ?? '';
-    if (lastHadithDate != today) {
-      _readHadithIds = {};
-      prefs.setStringList('readHadithIds', []);
-      prefs.setString('lastHadithDate', today);
-    } else {
-      final readHadithList = prefs.getStringList('readHadithIds') ?? [];
-      _readHadithIds = readHadithList.map((e) => int.tryParse(e) ?? 0).where((e) => e > 0).toSet();
-    }
-
-    _dailyAyahsReadDate = prefs.getString('dailyAyahsReadDate') ?? '';
-    if (_dailyAyahsReadDate != today) {
-      _dailyAyahsReadCount = 0;
-      _dailyAyahsReadDate = today;
-      prefs.setInt('dailyAyahsReadCount', 0);
-      prefs.setString('dailyAyahsReadDate', today);
-    } else {
-      _dailyAyahsReadCount = prefs.getInt('dailyAyahsReadCount') ?? 0;
-    }
-
-    _dailyUnlocksDate = prefs.getString('dailyUnlocksDate') ?? '';
-    if (_dailyUnlocksDate != today) {
-      _dailyUnlocksCount = 0;
-      _dailyUnlocksDate = today;
-      prefs.setInt('dailyUnlocksCount', 0);
-      prefs.setString('dailyUnlocksDate', today);
-    } else {
-      _dailyUnlocksCount = prefs.getInt('dailyUnlocksCount') ?? 0;
-      final savedAdGrace = prefs.getInt('adGracePeriodEndTime');
-      if (savedAdGrace != null) {
-        final dt = DateTime.fromMillisecondsSinceEpoch(savedAdGrace);
-        if (DateTime.now().isBefore(dt)) {
-          _adGracePeriodEndTime = dt;
-        }
+      if (_blockedApps.length != savedBlocked.length) {
+        prefs.setStringList('blockedApps', _blockedApps.toList());
       }
-    }
+      _lastReadAyat = prefs.getString('lastReadAyat') ?? '';
+      _lastReadSurah = prefs.getString('lastReadSurah') ?? '';
+      _lastReadAyahNumber = prefs.getInt('lastReadAyahNumber') ?? 0;
+      _hasSeenAccessibilitySetup =
+          prefs.getBool('hasSeenAccessibilitySetup') ?? false;
+      _hasAcknowledgedAutostart =
+          prefs.getBool('hasAcknowledgedAutostart') ?? false;
+      _isStrictMode = prefs.getBool('is_strict_mode') ?? true;
+      _strictModeDays = prefs.getInt('strict_mode_days') ?? 30;
+      _strictModeUntilMs = prefs.getInt('strict_mode_until_ms') ?? 0;
+      _launcherMode =
+          prefs.getString('launcher_mode') ??
+          (_isStrictMode ? 'strict' : 'standard');
+      _hasSelectedMode =
+          prefs.getBool('has_selected_mode') ?? _hasCompletedOnboarding;
 
-    final historyJson = prefs.getString('readingHistory') ?? '[]';
-    try {
-      final decoded = json.decode(historyJson) as List;
-      _readingHistory = decoded.map((e) => Map<String, dynamic>.from(e)).toList();
-    } catch (e) {
-      _readingHistory = [];
-    }
+      // Auto-transition to Standard Mode if Strict Mode duration has expired
+      final nowInit = DateTime.now().millisecondsSinceEpoch;
+      if (_isStrictMode &&
+          _strictModeUntilMs > 0 &&
+          nowInit >= _strictModeUntilMs) {
+        _isStrictMode = false;
+        _launcherMode = 'standard';
+        _strictModeUntilMs = 0;
+        await prefs.setBool('is_strict_mode', false);
+        await prefs.setString('launcher_mode', 'standard');
+        await prefs.setInt('strict_mode_until_ms', 0);
+      }
 
-    _totalDzikirCount = prefs.getInt('totalDzikirCount') ?? 0;
-    if (_totalDzikirCount == 0 && _readingHistory.isNotEmpty) {
-      for (final item in _readingHistory) {
-        final title = item['title']?.toString() ?? '';
-        if (title.contains('Dzikir:')) {
-          final count = item['versesCount'] as int? ?? item['count'] as int? ?? 0;
-          _totalDzikirCount += count;
-        }
-      }
-      if (_totalDzikirCount > 0) {
-        prefs.setInt('totalDzikirCount', _totalDzikirCount);
-      }
-    }
-    
-    final unlockedJson = prefs.getString('unlockedExpirations') ?? '{}';
-    try {
-      final decoded = json.decode(unlockedJson) as Map<String, dynamic>;
-      final now = DateTime.now().millisecondsSinceEpoch;
-      _unlockedExpirations = {};
-      bool pruned = false;
-      decoded.forEach((key, value) {
-        final exp = value as int;
-        if (exp > now) {
-          _unlockedExpirations[key] = exp;
-        } else {
-          pruned = true;
-        }
-      });
-      if (pruned) {
-        await prefs.setString('unlockedExpirations', json.encode(_unlockedExpirations));
-      }
-    } catch (e) {
-      _unlockedExpirations = {};
-    }
+      _highestSurahIndex = prefs.getInt('highestSurahIndex') ?? 0;
+      _highestAyahIndex = prefs.getInt('highestAyahIndex') ?? -1;
+      _khatmCount = prefs.getInt('khatmCount') ?? 0;
 
-    // Initialize App Block Service immediately so no platform signals are dropped
-    _appBlockService.init(
-      onAppBlocked: (pkg) {
-        if (isPassiveMode) return;
-        final cleanPkg = pkg.trim().toLowerCase();
-        if (cleanPkg.isNotEmpty) {
-          final now = DateTime.now().millisecondsSinceEpoch;
-          // Guard: if package is currently unlocked, ignore block event!
-          final expiry = _unlockedExpirations[cleanPkg];
-          if (expiry != null && now < expiry) {
-            return;
+      _quranDailyStreak = prefs.getInt('quranDailyStreak') ?? 0;
+      _maxQuranDailyStreak =
+          prefs.getInt('maxQuranDailyStreak') ?? _quranDailyStreak;
+      _lastQuranReadDate = prefs.getString('lastQuranReadDate') ?? '';
+
+      _dzikirDailyStreak = prefs.getInt('dzikirDailyStreak') ?? 0;
+      _maxDzikirDailyStreak =
+          prefs.getInt('maxDzikirDailyStreak') ?? _dzikirDailyStreak;
+      _lastDzikirDate = prefs.getString('lastDzikirDate') ?? '';
+
+      _disciplineDailyStreak = prefs.getInt('disciplineDailyStreak') ?? 0;
+      _maxDisciplineDailyStreak =
+          prefs.getInt('maxDisciplineDailyStreak') ?? _disciplineDailyStreak;
+      _lastDisciplineDate = prefs.getString('lastDisciplineDate') ?? '';
+      _dailyPointsSpent = prefs.getInt('dailyPointsSpent') ?? 0;
+      _dailyPointsSpentDate = prefs.getString('dailyPointsSpentDate') ?? '';
+      _checkDailyDiscipline();
+
+      final savedClaimedBadges = prefs.getStringList('claimedBadgeIds') ?? [];
+      _claimedBadgeIds = savedClaimedBadges.toSet();
+
+      _userName = prefs.getString('userName') ?? '';
+      final savedCompletedSurahs =
+          prefs.getStringList('completedSurahsThisCycle') ?? [];
+      _completedSurahsThisCycle = savedCompletedSurahs
+          .map((e) => int.tryParse(e) ?? 0)
+          .where((e) => e > 0)
+          .toSet();
+
+      final today = DateTime.now().toIso8601String().split('T')[0];
+      _dailyDzikirDate = prefs.getString('dailyDzikirDate') ?? '';
+      if (_dailyDzikirDate != today) {
+        _dailyDzikirRounds = 0;
+        _dailyDzikirPoints = 0;
+        _dailyDzikirCount = 0;
+        _dailyDzikirPresetRounds = {};
+        _dailyDzikirDate = today;
+        prefs.setInt('dailyDzikirRounds', 0);
+        prefs.setInt('dailyDzikirPoints', 0);
+        prefs.setInt('dailyDzikirCount', 0);
+        prefs.setString('dailyDzikirDate', today);
+        prefs.setString('dailyDzikirPresetRounds', '{}');
+      } else {
+        _dailyDzikirRounds = prefs.getInt('dailyDzikirRounds') ?? 0;
+        _dailyDzikirPoints = prefs.getInt('dailyDzikirPoints') ?? 0;
+        _dailyDzikirCount = prefs.getInt('dailyDzikirCount') ?? 0;
+        final rawPresetRounds = prefs.getString('dailyDzikirPresetRounds');
+        if (rawPresetRounds != null && rawPresetRounds.isNotEmpty) {
+          try {
+            final decoded = jsonDecode(rawPresetRounds) as Map<String, dynamic>;
+            _dailyDzikirPresetRounds = decoded.map(
+              (k, v) => MapEntry(k, (v as num).toInt()),
+            );
+          } catch (_) {
+            _dailyDzikirPresetRounds = {};
           }
-          // Guard: if recently dismissed within 3 seconds
-          if (cleanPkg == _lastBlockedAppDismissedPackage && (now - _lastBlockedAppDismissedTime) < 3000) {
-            return;
-          }
-          // Time-based guard: allow re-trigger for same package if >1.5s has passed
-          // (previously exact-match guard blocked re-triggers from external launches)
-          if (_lastAttemptedBlockedPackage == cleanPkg && (now - _lastBlockedEventTime) < 1500) return;
-          _lastBlockedEventTime = now;
-
-          _lastAttemptedBlockedPackage = cleanPkg;
-          _lastAttemptedProhibitedPackage = null;
-          _lastAttemptedGhadhulBasharPackage = null;
-          notifyListeners();
         }
-      },
-      onGhadhulBasharTriggered: (pkg, [extraInfo]) {
-        if (isPassiveMode) return;
-        final cleanPkg = pkg.trim().toLowerCase();
-        if (cleanPkg.isNotEmpty) {
-          final now = DateTime.now().millisecondsSinceEpoch;
-          // Priority guard: If a prohibited app or site is currently triggered or showing,
-          // NEVER let Ghadhul Bashar override it!
-          if ((_lastAttemptedProhibitedPackage?.isNotEmpty ?? false) ||
-              (now - _lastProhibitedEventTime) < 4000) {
-            return;
-          }
-          // Guard: if recently dismissed or allowed within 4 seconds, ignore duplicate trigger
-          if (cleanPkg == _lastGhadhulBasharDismissedPackage && (now - _lastGhadhulBasharDismissedTime) < 4000) {
-            return;
-          }
-          // Time-based guard: allow re-trigger for same package if >1.5s has passed
-          if (_lastAttemptedGhadhulBasharPackage == cleanPkg && (now - _lastGhadhulEventTime) < 1500) return;
-          _lastGhadhulEventTime = now;
+      }
 
-          _lastAttemptedGhadhulBasharPackage = cleanPkg;
-          _lastAttemptedGhadhulBasharExtra = extraInfo;
-          _lastAttemptedBlockedPackage = null;
-          _lastAttemptedProhibitedPackage = null;
-          notifyListeners();
+      final lastHadithDate = prefs.getString('lastHadithDate') ?? '';
+      if (lastHadithDate != today) {
+        _readHadithIds = {};
+        prefs.setStringList('readHadithIds', []);
+        prefs.setString('lastHadithDate', today);
+      } else {
+        final readHadithList = prefs.getStringList('readHadithIds') ?? [];
+        _readHadithIds = readHadithList
+            .map((e) => int.tryParse(e) ?? 0)
+            .where((e) => e > 0)
+            .toSet();
+      }
+
+      _dailyAyahsReadDate = prefs.getString('dailyAyahsReadDate') ?? '';
+      if (_dailyAyahsReadDate != today) {
+        _dailyAyahsReadCount = 0;
+        _dailyAyahsReadDate = today;
+        prefs.setInt('dailyAyahsReadCount', 0);
+        prefs.setString('dailyAyahsReadDate', today);
+      } else {
+        _dailyAyahsReadCount = prefs.getInt('dailyAyahsReadCount') ?? 0;
+      }
+
+      _dailyUnlocksDate = prefs.getString('dailyUnlocksDate') ?? '';
+      if (_dailyUnlocksDate != today) {
+        _dailyUnlocksCount = 0;
+        _dailyUnlocksDate = today;
+        prefs.setInt('dailyUnlocksCount', 0);
+        prefs.setString('dailyUnlocksDate', today);
+      } else {
+        _dailyUnlocksCount = prefs.getInt('dailyUnlocksCount') ?? 0;
+        final savedAdGrace = prefs.getInt('adGracePeriodEndTime');
+        if (savedAdGrace != null) {
+          final dt = DateTime.fromMillisecondsSinceEpoch(savedAdGrace);
+          if (DateTime.now().isBefore(dt)) {
+            _adGracePeriodEndTime = dt;
+          }
         }
-      },
-      onProhibitedAppTriggered: (pkg) {
-        if (isPassiveMode) return;
-        final cleanPkg = pkg.trim().toLowerCase();
-        if (cleanPkg.isNotEmpty) {
-          final now = DateTime.now().millisecondsSinceEpoch;
-          if (cleanPkg == _lastProhibitedTriggeredPackage && (now - _lastProhibitedTriggeredTime) < 2000) {
-            return;
+      }
+
+      final historyJson = prefs.getString('readingHistory') ?? '[]';
+      try {
+        final decoded = json.decode(historyJson) as List;
+        _readingHistory = decoded
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList();
+      } catch (e) {
+        _readingHistory = [];
+      }
+
+      _totalDzikirCount = prefs.getInt('totalDzikirCount') ?? 0;
+      if (_totalDzikirCount == 0 && _readingHistory.isNotEmpty) {
+        for (final item in _readingHistory) {
+          final title = item['title']?.toString() ?? '';
+          if (title.contains('Dzikir:')) {
+            final count =
+                item['versesCount'] as int? ?? item['count'] as int? ?? 0;
+            _totalDzikirCount += count;
           }
-          // Time-based guard: allow re-trigger for same package if >1.5s has passed
-          if (_lastAttemptedProhibitedPackage == cleanPkg && (now - _lastProhibitedEventTime) < 1500) return;
-          _lastProhibitedEventTime = now;
-
-          _lastProhibitedTriggeredPackage = cleanPkg;
-          _lastProhibitedTriggeredTime = now;
-          _lastAttemptedProhibitedPackage = cleanPkg;
-          _lastAttemptedBlockedPackage = null;
-          _lastAttemptedGhadhulBasharPackage = null;
-          notifyListeners();
         }
-      },
-      onStrictShieldTriggered: (reason) {
-        if (isPassiveMode) return;
-        _lastStrictShieldEventTime = DateTime.now().millisecondsSinceEpoch;
-        _lastAttemptedStrictShieldReason = reason;
-        notifyListeners();
-      },
-      onStandardReflectionTriggered: () {
-        // Standard reflection overlay removed for standard mode
-      },
-    );
-    _appBlockService.setBlockedApps(_blockedApps.toList());
-    syncGhadhulBasharPackages();
-    syncProhibitedPackages();
+        if (_totalDzikirCount > 0) {
+          prefs.setInt('totalDzikirCount', _totalDzikirCount);
+        }
+      }
 
-    const appsChannel = MethodChannel('com.islamiclauncher/apps');
-    appsChannel.setMethodCallHandler((call) async {
-      if (call.method == 'onAppListChanged') {
-        AppListScreen.invalidateFull();
-        final rawApps = await appsChannel.invokeMethod('getApps');
-        AppListScreen.preload(forceRefresh: true);
-        syncAppsWithCategories(rawApps);
-      } else if (call.method == 'onHomePressed') {
+      final unlockedJson = prefs.getString('unlockedExpirations') ?? '{}';
+      try {
+        final decoded = json.decode(unlockedJson) as Map<String, dynamic>;
         final now = DateTime.now().millisecondsSinceEpoch;
-        final isRecentlyTriggered = (now - _lastBlockedEventTime < 3000) ||
-            (now - _lastGhadhulEventTime < 3000) ||
-            (now - _lastProhibitedEventTime < 3000) ||
-            (now - _lastStrictShieldEventTime < 3000);
-        if (hasActiveOverlay && !isRecentlyTriggered) {
-          clearAllOverlays();
-        } else if (!hasActiveOverlay) {
-          goHome();
+        _unlockedExpirations = {};
+        bool pruned = false;
+        decoded.forEach((key, value) {
+          final exp = value as int;
+          if (exp > now) {
+            _unlockedExpirations[key] = exp;
+          } else {
+            pruned = true;
+          }
+        });
+        if (pruned) {
+          await prefs.setString(
+            'unlockedExpirations',
+            json.encode(_unlockedExpirations),
+          );
         }
+      } catch (e) {
+        _unlockedExpirations = {};
       }
-    });
 
-    // Check if launch was triggered by cold-boot block intent
-    try {
-      const blockChannel = MethodChannel('com.islamiclauncher/block');
-      final initialData = await blockChannel.invokeMethod('getPendingInitialBlock');
-      if (initialData is Map) {
-        final pendingProhibited = initialData['prohibited'] as String?;
-        final pendingBlocked = initialData['blocked'] as String?;
-        final pendingGhadhul = initialData['ghadhul'] as String?;
-        if (pendingProhibited != null && pendingProhibited.isNotEmpty) {
-          _lastAttemptedProhibitedPackage = pendingProhibited.toLowerCase();
-          _lastAttemptedBlockedPackage = null;
-          _lastAttemptedGhadhulBasharPackage = null;
-        } else if (pendingBlocked != null && pendingBlocked.isNotEmpty) {
-          final cleanBlocked = pendingBlocked.toLowerCase();
-          final now = DateTime.now().millisecondsSinceEpoch;
-          final expiry = _unlockedExpirations[cleanBlocked];
-          if (expiry == null || now >= expiry) {
-            _lastAttemptedBlockedPackage = cleanBlocked;
+      // Initialize App Block Service immediately so no platform signals are dropped
+      _appBlockService.init(
+        onAppBlocked: (pkg) {
+          if (isPassiveMode) return;
+          final cleanPkg = pkg.trim().toLowerCase();
+          if (cleanPkg.isNotEmpty) {
+            final now = DateTime.now().millisecondsSinceEpoch;
+            // Guard: if package is currently unlocked, ignore block event!
+            final expiry = _unlockedExpirations[cleanPkg];
+            if (expiry != null && now < expiry) {
+              return;
+            }
+            // Guard: if recently dismissed within 3 seconds
+            if (cleanPkg == _lastBlockedAppDismissedPackage &&
+                (now - _lastBlockedAppDismissedTime) < 3000) {
+              return;
+            }
+            // Time-based guard: allow re-trigger for same package if >1.5s has passed
+            // (previously exact-match guard blocked re-triggers from external launches)
+            if (_lastAttemptedBlockedPackage == cleanPkg &&
+                (now - _lastBlockedEventTime) < 1500) {
+              return;
+            }
+            _lastBlockedEventTime = now;
+
+            _lastAttemptedBlockedPackage = cleanPkg;
             _lastAttemptedProhibitedPackage = null;
             _lastAttemptedGhadhulBasharPackage = null;
+            notifyListeners();
           }
-        } else if (pendingGhadhul != null && pendingGhadhul.isNotEmpty) {
-          _lastAttemptedGhadhulBasharPackage = pendingGhadhul.toLowerCase();
-          _lastAttemptedGhadhulBasharExtra = initialData['ghadhulExtra'] as String?;
-          _lastAttemptedProhibitedPackage = null;
-          _lastAttemptedBlockedPackage = null;
-        }
+        },
+        onGhadhulBasharTriggered: (pkg, [extraInfo]) {
+          if (isPassiveMode) return;
+          final cleanPkg = pkg.trim().toLowerCase();
+          if (cleanPkg.isNotEmpty) {
+            final now = DateTime.now().millisecondsSinceEpoch;
+            // Priority guard: If a prohibited app or site is currently triggered or showing,
+            // NEVER let Ghadhul Bashar override it!
+            if ((_lastAttemptedProhibitedPackage?.isNotEmpty ?? false) ||
+                (now - _lastProhibitedEventTime) < 4000) {
+              return;
+            }
+            // Guard: if recently dismissed or allowed within 4 seconds, ignore duplicate trigger
+            if (cleanPkg == _lastGhadhulBasharDismissedPackage &&
+                (now - _lastGhadhulBasharDismissedTime) < 4000) {
+              return;
+            }
+            // Time-based guard: allow re-trigger for same package if >1.5s has passed
+            if (_lastAttemptedGhadhulBasharPackage == cleanPkg &&
+                (now - _lastGhadhulEventTime) < 1500) {
+              return;
+            }
+            _lastGhadhulEventTime = now;
 
-      }
-    } catch (_) {}
+            _lastAttemptedGhadhulBasharPackage = cleanPkg;
+            _lastAttemptedGhadhulBasharExtra = extraInfo;
+            _lastAttemptedBlockedPackage = null;
+            _lastAttemptedProhibitedPackage = null;
+            notifyListeners();
+          }
+        },
+        onProhibitedAppTriggered: (pkg) {
+          if (isPassiveMode) return;
+          final cleanPkg = pkg.trim().toLowerCase();
+          if (cleanPkg.isNotEmpty) {
+            final now = DateTime.now().millisecondsSinceEpoch;
+            if (cleanPkg == _lastProhibitedTriggeredPackage &&
+                (now - _lastProhibitedTriggeredTime) < 2000) {
+              return;
+            }
+            // Time-based guard: allow re-trigger for same package if >1.5s has passed
+            if (_lastAttemptedProhibitedPackage == cleanPkg &&
+                (now - _lastProhibitedEventTime) < 1500) {
+              return;
+            }
+            _lastProhibitedEventTime = now;
 
-    // Await crucial initialization
-    await Future.wait([
-      loadQuranData(),
-      loadHadithData(),
-      _fetchDeviceInfo(),
-      AppListScreen.initFromDisk(prefs),
-    ]);
-
-    _initDailyVerse();
-    _initDailyHadith();
-
-    // Start background app & icon preloading immediately
-    AppListScreen.preload(
-      onRawAppsFetched: (raw) => syncAppsWithCategories(raw),
-    );
-
-    try {
-      _isAccessibilityEnabled = await _appBlockService.isAccessibilityEnabled();
-      final defRes = await appsChannel.invokeMethod('isDefaultLauncher');
-      _isDefaultLauncher = defRes is bool ? defRes : false;
-      _isDeviceAdminActive = await _appBlockService.isDeviceAdminActive();
-
-      // Sync strict mode state to native service on startup
-      await _appBlockService.setStrictModeConfig(
-        enabled: _isStrictMode && isStrictActiveNow,
-        days: _strictModeDays,
-        untilMs: _strictModeUntilMs,
+            _lastProhibitedTriggeredPackage = cleanPkg;
+            _lastProhibitedTriggeredTime = now;
+            _lastAttemptedProhibitedPackage = cleanPkg;
+            _lastAttemptedBlockedPackage = null;
+            _lastAttemptedGhadhulBasharPackage = null;
+            notifyListeners();
+          }
+        },
+        onStrictShieldTriggered: (reason) {
+          if (isPassiveMode) return;
+          _lastStrictShieldEventTime = DateTime.now().millisecondsSinceEpoch;
+          _lastAttemptedStrictShieldReason = reason;
+          notifyListeners();
+        },
+        onStandardReflectionTriggered: () {
+          // Standard reflection overlay removed for standard mode
+        },
       );
-    } catch (_) {}
+      _appBlockService.setBlockedApps(_blockedApps.toList());
+      syncGhadhulBasharPackages();
+      syncProhibitedPackages();
 
-    _isInitialized = true;
-    _startStatusTimer();
-    
-    notifyListeners();
+      const appsChannel = MethodChannel('com.islamiclauncher/apps');
+      appsChannel.setMethodCallHandler((call) async {
+        if (call.method == 'onAppListChanged') {
+          AppListScreen.invalidateFull();
+          final rawApps = await appsChannel.invokeMethod('getApps');
+          AppListScreen.preload(forceRefresh: true);
+          syncAppsWithCategories(rawApps);
+        } else if (call.method == 'onHomePressed') {
+          final now = DateTime.now().millisecondsSinceEpoch;
+          final isRecentlyTriggered =
+              (now - _lastBlockedEventTime < 3000) ||
+              (now - _lastGhadhulEventTime < 3000) ||
+              (now - _lastProhibitedEventTime < 3000) ||
+              (now - _lastStrictShieldEventTime < 3000);
+          if (hasActiveOverlay && !isRecentlyTriggered) {
+            clearAllOverlays();
+          } else if (!hasActiveOverlay) {
+            goHome();
+          }
+        }
+      });
+
+      // Check if launch was triggered by cold-boot block intent
+      try {
+        const blockChannel = MethodChannel('com.islamiclauncher/block');
+        final initialData = await blockChannel.invokeMethod(
+          'getPendingInitialBlock',
+        );
+        if (initialData is Map) {
+          final pendingProhibited = initialData['prohibited'] as String?;
+          final pendingBlocked = initialData['blocked'] as String?;
+          final pendingGhadhul = initialData['ghadhul'] as String?;
+          if (pendingProhibited != null && pendingProhibited.isNotEmpty) {
+            _lastAttemptedProhibitedPackage = pendingProhibited.toLowerCase();
+            _lastAttemptedBlockedPackage = null;
+            _lastAttemptedGhadhulBasharPackage = null;
+          } else if (pendingBlocked != null && pendingBlocked.isNotEmpty) {
+            final cleanBlocked = pendingBlocked.toLowerCase();
+            final now = DateTime.now().millisecondsSinceEpoch;
+            final expiry = _unlockedExpirations[cleanBlocked];
+            if (expiry == null || now >= expiry) {
+              _lastAttemptedBlockedPackage = cleanBlocked;
+              _lastAttemptedProhibitedPackage = null;
+              _lastAttemptedGhadhulBasharPackage = null;
+            }
+          } else if (pendingGhadhul != null && pendingGhadhul.isNotEmpty) {
+            _lastAttemptedGhadhulBasharPackage = pendingGhadhul.toLowerCase();
+            _lastAttemptedGhadhulBasharExtra =
+                initialData['ghadhulExtra'] as String?;
+            _lastAttemptedProhibitedPackage = null;
+            _lastAttemptedBlockedPackage = null;
+          }
+        }
+      } catch (_) {}
+
+      // Await crucial initialization
+      await Future.wait([
+        loadQuranData(),
+        loadHadithData(),
+        _fetchDeviceInfo(),
+        AppListScreen.initFromDisk(prefs),
+      ]);
+
+      _initDailyVerse();
+      _initDailyHadith();
+
+      // Start background app & icon preloading immediately
+      AppListScreen.preload(
+        onRawAppsFetched: (raw) => syncAppsWithCategories(raw),
+      );
+
+      try {
+        _isAccessibilityEnabled = await _appBlockService
+            .isAccessibilityEnabled();
+        final defRes = await appsChannel.invokeMethod('isDefaultLauncher');
+        _isDefaultLauncher = defRes is bool ? defRes : false;
+        _isDeviceAdminActive = await _appBlockService.isDeviceAdminActive();
+
+        // Sync strict mode state to native service on startup
+        await _appBlockService.setStrictModeConfig(
+          enabled: _isStrictMode && isStrictActiveNow,
+          days: _strictModeDays,
+          untilMs: _strictModeUntilMs,
+        );
+      } catch (_) {}
+
+      _isInitialized = true;
+      _startStatusTimer();
+
+      notifyListeners();
     } catch (e) {
       debugPrint("AppState init error: $e");
       // Ensure app can still show UI even if init partially fails
@@ -908,7 +980,8 @@ class AppState extends ChangeNotifier {
     bool changed = false;
 
     // Check if strict mode duration expired during app session
-    final storedUntil = prefs.getInt('strict_mode_until_ms') ?? _strictModeUntilMs;
+    final storedUntil =
+        prefs.getInt('strict_mode_until_ms') ?? _strictModeUntilMs;
     _strictModeUntilMs = storedUntil;
     final now = DateTime.now().millisecondsSinceEpoch;
     if (_isStrictMode && _strictModeUntilMs > 0 && now >= _strictModeUntilMs) {
@@ -940,8 +1013,9 @@ class AppState extends ChangeNotifier {
     // 2. Default Launcher Check
     try {
       const appsChannel = MethodChannel('com.islamiclauncher/apps');
-      final bool defEnabled =
-          await appsChannel.invokeMethod('isDefaultLauncher');
+      final bool defEnabled = await appsChannel.invokeMethod(
+        'isDefaultLauncher',
+      );
       if (defEnabled != _isDefaultLauncher) {
         _isDefaultLauncher = defEnabled;
         changed = true;
@@ -1003,7 +1077,7 @@ class AppState extends ChangeNotifier {
     _statusTimer?.cancel();
     super.dispose();
   }
-  
+
   Future<void> _fetchDeviceInfo() async {
     const appsChannel = MethodChannel('com.islamiclauncher/apps');
     try {
@@ -1033,7 +1107,7 @@ class AppState extends ChangeNotifier {
       }
       return false;
     });
-    
+
     if (changed) {
       prefs.setString('unlockedExpirations', json.encode(_unlockedExpirations));
       // Re-sync blocked apps to native so expired unlocks are enforced immediately
@@ -1081,27 +1155,27 @@ class AppState extends ChangeNotifier {
     if (_quranData.isEmpty) return;
 
     try {
-    // Use date hashCode for consistent random per day (won't change on restart)
-    final seed = date.hashCode;
-    final int surahIdx = (seed % _quranData.length).abs();
-    final surah = _quranData[surahIdx];
-    final ayahs = surah['ayahs'] as List;
-    final int ayahIdx = ((seed ~/ _quranData.length) % ayahs.length).abs();
-    final ayah = ayahs[ayahIdx];
+      // Use date hashCode for consistent random per day (won't change on restart)
+      final seed = date.hashCode;
+      final int surahIdx = (seed % _quranData.length).abs();
+      final surah = _quranData[surahIdx];
+      final ayahs = surah['ayahs'] as List;
+      final int ayahIdx = ((seed ~/ _quranData.length) % ayahs.length).abs();
+      final ayah = ayahs[ayahIdx];
 
-    _dailySurahName = surah['surah_name'] as String;
-    _dailyAyahNumber = ayah['ayah_number'] as int;
-    _dailyAyahTextEn = ayah['translation_en'] as String? ?? '';
-    _dailyAyahTextId = ayah['translation_id'] as String? ?? '';
-    _dailyVerseDate = date;
+      _dailySurahName = surah['surah_name'] as String;
+      _dailyAyahNumber = ayah['ayah_number'] as int;
+      _dailyAyahTextEn = ayah['translation_en'] as String? ?? '';
+      _dailyAyahTextId = ayah['translation_id'] as String? ?? '';
+      _dailyVerseDate = date;
 
-    await prefs.setString('dailySurahName', _dailySurahName);
-    await prefs.setInt('dailyAyahNumber', _dailyAyahNumber);
-    await prefs.setString('dailyAyahTextEn', _dailyAyahTextEn);
-    await prefs.setString('dailyAyahTextId', _dailyAyahTextId);
-    await prefs.setString('dailyVerseDate', _dailyVerseDate);
+      await prefs.setString('dailySurahName', _dailySurahName);
+      await prefs.setInt('dailyAyahNumber', _dailyAyahNumber);
+      await prefs.setString('dailyAyahTextEn', _dailyAyahTextEn);
+      await prefs.setString('dailyAyahTextId', _dailyAyahTextId);
+      await prefs.setString('dailyVerseDate', _dailyVerseDate);
 
-    notifyListeners();
+      notifyListeners();
     } catch (e) {
       debugPrint("Failed to update daily verse: $e");
     }
@@ -1184,6 +1258,12 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> setPoints(int value) async {
+    _points = value;
+    await prefs.setInt('points', _points);
+    notifyListeners();
+  }
+
   Future<void> setHasAcknowledgedAutostart(bool value) async {
     _hasAcknowledgedAutostart = value;
     await prefs.setBool('hasAcknowledgedAutostart', value);
@@ -1202,14 +1282,21 @@ class AppState extends ChangeNotifier {
     return false;
   }
 
-  Future<void> toggleAppBlockedStatus(String packageName, {int? category, String? appName}) async {
+  Future<void> toggleAppBlockedStatus(
+    String packageName, {
+    int? category,
+    String? appName,
+  }) async {
     final pkg = packageName.toLowerCase().trim();
     if (isProductiveApp(pkg, appName ?? '', category ?? -1)) {
       return; // Do not allow blocking productive apps
     }
     // Strict Mode: Only allow blocking, not unblocking manually
     _customProductiveApps.remove(pkg);
-    await prefs.setStringList('customProductiveApps', _customProductiveApps.toList());
+    await prefs.setStringList(
+      'customProductiveApps',
+      _customProductiveApps.toList(),
+    );
     if (!_blockedApps.contains(pkg)) {
       _blockedApps.add(pkg);
       await prefs.setStringList('blockedApps', _blockedApps.toList());
@@ -1233,7 +1320,12 @@ class AppState extends ChangeNotifier {
       'com.google.android.permissioncontroller',
     ];
     if (essentialPackages.contains(pkg)) return true;
-    if (pkg.contains('com.islamiclauncher') || pkg.contains('islamic_launcher') || pkg.contains('com.muslimlauncher') || pkg.contains('muslim_launcher')) return true;
+    if (pkg.contains('com.islamiclauncher') ||
+        pkg.contains('islamic_launcher') ||
+        pkg.contains('com.muslimlauncher') ||
+        pkg.contains('muslim_launcher')) {
+      return true;
+    }
     return false;
   }
 
@@ -1249,15 +1341,25 @@ class AppState extends ChangeNotifier {
     _customProductiveApps.remove(pkg);
     _blockedApps.add(pkg);
 
-    await prefs.setStringList('userNonProductiveApps', _userNonProductiveApps.toList());
-    await prefs.setStringList('customProductiveApps', _customProductiveApps.toList());
+    await prefs.setStringList(
+      'userNonProductiveApps',
+      _userNonProductiveApps.toList(),
+    );
+    await prefs.setStringList(
+      'customProductiveApps',
+      _customProductiveApps.toList(),
+    );
     await prefs.setStringList('blockedApps', _blockedApps.toList());
     await _appBlockService.setBlockedApps(_blockedApps.toList());
 
     notifyListeners();
   }
 
-  Future<void> markAppAsProductive(String packageName, {String? appName, int? category}) async {
+  Future<void> markAppAsProductive(
+    String packageName, {
+    String? appName,
+    int? category,
+  }) async {
     final pkg = packageName.toLowerCase().trim();
     final cat = category ?? getAppCategorySync(pkg);
     if (isStrictlyNonProductive(pkg, appName ?? '', cat)) {
@@ -1265,7 +1367,10 @@ class AppState extends ChangeNotifier {
     }
     _customProductiveApps.add(pkg);
     _blockedApps.remove(pkg);
-    await prefs.setStringList('customProductiveApps', _customProductiveApps.toList());
+    await prefs.setStringList(
+      'customProductiveApps',
+      _customProductiveApps.toList(),
+    );
     await prefs.setStringList('blockedApps', _blockedApps.toList());
     await _appBlockService.setBlockedApps(_blockedApps.toList());
     notifyListeners();
@@ -1350,10 +1455,17 @@ class AppState extends ChangeNotifier {
   }
 
   static const Set<String> _whitelist = {
-    'com.whatsapp', 'com.whatsapp.w4b', 'com.android.chrome', 
-    'com.google.android.gm', 'com.android.settings', 'com.android.vending',
-    'com.google.android.apps.messaging', 'com.android.mms', 'com.samsung.android.messaging',
-    'com.google.android.contacts', 'com.android.contacts'
+    'com.whatsapp',
+    'com.whatsapp.w4b',
+    'com.android.chrome',
+    'com.google.android.gm',
+    'com.android.settings',
+    'com.android.vending',
+    'com.google.android.apps.messaging',
+    'com.android.mms',
+    'com.samsung.android.messaging',
+    'com.google.android.contacts',
+    'com.android.contacts',
   };
 
   static bool isWhitelisted(String packageName) {
@@ -1362,7 +1474,11 @@ class AppState extends ChangeNotifier {
 
   /// Determines if an app is a music or audio application (both online streaming and offline players).
   /// Music apps are considered productive / permitted and must never be auto-blocked.
-  static bool isMusicOrAudioApp(String packageName, String appName, [int category = -1]) {
+  static bool isMusicOrAudioApp(
+    String packageName,
+    String appName, [
+    int category = -1,
+  ]) {
     final pkg = packageName.toLowerCase().trim();
     final name = appName.toLowerCase().trim();
 
@@ -1375,7 +1491,9 @@ class AppState extends ChangeNotifier {
 
     // 1. Definite Exclusions: Games and social video platforms
     if (category == 0) return false; // Android CATEGORY_GAME
-    if (pkg.contains('musically') || pkg.contains('tiktok') || name.contains('tiktok')) {
+    if (pkg.contains('musically') ||
+        pkg.contains('tiktok') ||
+        name.contains('tiktok')) {
       return false; // TikTok / Musical.ly
     }
     if (pkg == 'com.google.android.youtube' || name == 'youtube') {
@@ -1428,7 +1546,8 @@ class AppState extends ChangeNotifier {
     if (pkg.contains('apple.android.music') || name.contains('apple music')) {
       return true;
     }
-    if (pkg == 'com.amazon.mp3' || (pkg.contains('amazon') && name.contains('music'))) {
+    if (pkg == 'com.amazon.mp3' ||
+        (pkg.contains('amazon') && name.contains('music'))) {
       return true;
     }
 
@@ -1517,7 +1636,9 @@ class AppState extends ChangeNotifier {
     }
 
     // 7. General music/audio terms in app name (guarded against games)
-    if (name.contains('music') || name.contains('musik') || name.contains('audio')) {
+    if (name.contains('music') ||
+        name.contains('musik') ||
+        name.contains('audio')) {
       if (!name.contains('game') &&
           !name.contains('tile') &&
           !name.contains('piano') &&
@@ -1565,7 +1686,8 @@ class AppState extends ChangeNotifier {
     }
 
     // Any app containing "browser" or "peramban" is a browser, not a pure VPN app
-    final hasBrowserKeyword = pkg.contains('browser') ||
+    final hasBrowserKeyword =
+        pkg.contains('browser') ||
         name.contains('browser') ||
         name.contains('peramban');
     if (hasBrowserKeyword) {
@@ -1600,7 +1722,11 @@ class AppState extends ChangeNotifier {
       'com.mi.globalbrowser',
     ];
     if (browserPackages.contains(pkg)) return true;
-    if (pkg.contains('.browser') || pkg.contains('browser.') || pkg.endsWith('browser')) return true;
+    if (pkg.contains('.browser') ||
+        pkg.contains('browser.') ||
+        pkg.endsWith('browser')) {
+      return true;
+    }
     if (name.contains('browser') || name.contains('peramban')) return true;
     return false;
   }
@@ -1683,7 +1809,23 @@ class AppState extends ChangeNotifier {
       final sysCountry = (sysLocale.countryCode ?? '').toUpperCase();
 
       const arabCountries = [
-        'SA', 'AE', 'QA', 'KW', 'OM', 'BH', 'EG', 'IQ', 'JO', 'LB', 'LY', 'MA', 'SD', 'SY', 'TN', 'YE', 'DZ'
+        'SA',
+        'AE',
+        'QA',
+        'KW',
+        'OM',
+        'BH',
+        'EG',
+        'IQ',
+        'JO',
+        'LB',
+        'LY',
+        'MA',
+        'SD',
+        'SY',
+        'TN',
+        'YE',
+        'DZ',
       ];
       const otherRestrictedCountries = ['TR', 'PK', 'BD'];
 
@@ -1707,7 +1849,9 @@ class AppState extends ChangeNotifier {
 
         if (indonesianLangs.contains(lang) || country == 'ID') return true;
         if (malaysianLangs.contains(lang) || country == 'MY') return true;
-        if (arabicLangs.contains(lang) || arabCountries.contains(country)) return true;
+        if (arabicLangs.contains(lang) || arabCountries.contains(country)) {
+          return true;
+        }
         if (otherRestrictedCountries.contains(country)) return true;
       }
     } catch (_) {}
@@ -1783,7 +1927,10 @@ class AppState extends ChangeNotifier {
 
   /// Checks if an app is a bypass/anti-censorship browser frequently abused to circumvent adult content blocks
   /// (e.g. Yandex, Aloha Browser, UPX, Puffin, Tor Browser, Blue Proxy, etc.)
-  static bool isProhibitedBypassBrowser(String packageName, [String appName = '']) {
+  static bool isProhibitedBypassBrowser(
+    String packageName, [
+    String appName = '',
+  ]) {
     final pkg = packageName.toLowerCase().trim();
     final name = appName.toLowerCase().trim();
 
@@ -1901,10 +2048,12 @@ class AppState extends ChangeNotifier {
     }
 
     // 11. General heuristic: Any app identifying as a browser that also features VPN, Proxy, Unblock, Incognito/Secret/Stealth/Bypass capabilities
-    final hasBrowserKeyword = pkg.contains('browser') ||
+    final hasBrowserKeyword =
+        pkg.contains('browser') ||
         name.contains('browser') ||
         name.contains('peramban');
-    final hasVpnOrProxyKeyword = pkg.contains('vpn') ||
+    final hasVpnOrProxyKeyword =
+        pkg.contains('vpn') ||
         name.contains('vpn') ||
         pkg.contains('proxy') ||
         name.contains('proxy') ||
@@ -2310,7 +2459,11 @@ class AppState extends ChangeNotifier {
 
     for (final kw in gamblingKeywords) {
       if (kw.contains(' ')) {
-        if (name.contains(kw) || pkg.contains(kw.replaceAll(' ', '')) || pkg.contains(kw)) return true;
+        if (name.contains(kw) ||
+            pkg.contains(kw.replaceAll(' ', '')) ||
+            pkg.contains(kw)) {
+          return true;
+        }
       } else {
         if (name.contains(kw) || pkg.contains(kw)) return true;
       }
@@ -2367,7 +2520,10 @@ class AppState extends ChangeNotifier {
 
   /// Checks if an app is one of the major social or messaging platforms with high adult content / indecency risk:
   /// Facebook, Twitter/X, Instagram, TikTok, Telegram, and Telegram X (all countries).
-  static bool isHighRiskSocialMediaApp(String packageName, [String appName = '']) {
+  static bool isHighRiskSocialMediaApp(
+    String packageName, [
+    String appName = '',
+  ]) {
     final pkg = packageName.toLowerCase().trim();
     final name = appName.toLowerCase().trim();
 
@@ -2376,7 +2532,9 @@ class AppState extends ChangeNotifier {
     // 1. Facebook (Katana, Lite, Web wrapper)
     if (pkg.contains('com.facebook.katana') ||
         pkg.contains('com.facebook.lite') ||
-        (name.contains('facebook') && !name.contains('messenger') && !name.contains('meta'))) {
+        (name.contains('facebook') &&
+            !name.contains('messenger') &&
+            !name.contains('meta'))) {
       return true;
     }
 
@@ -2432,7 +2590,8 @@ class AppState extends ChangeNotifier {
     if (isHighRiskSocialMediaApp(packageName, appName)) {
       return true; // Facebook, Twitter/X, Instagram, TikTok, Telegram/Telegram X (all countries)
     }
-    if (isVpnApp(packageName, appName) && isRestrictedAdultContentRegion(languageCode)) {
+    if (isVpnApp(packageName, appName) &&
+        isRestrictedAdultContentRegion(languageCode)) {
       return true; // VPNs in countries that block adult content
     }
     return false;
@@ -2541,7 +2700,11 @@ class AppState extends ChangeNotifier {
 
   /// Checks if an app is a productive, essential, utility, communication, educational, or religious app.
   /// Productive apps must NEVER be blocked by the launcher.
-  static bool isProductiveApp(String packageName, String appName, [int category = -1]) {
+  static bool isProductiveApp(
+    String packageName,
+    String appName, [
+    int category = -1,
+  ]) {
     final pkg = packageName.toLowerCase().trim();
     final name = appName.toLowerCase().trim();
 
@@ -2579,9 +2742,15 @@ class AppState extends ChangeNotifier {
     // CATEGORY_NEWS = 5 (News / Informational)
     // CATEGORY_IMAGE = 3 (Photography / Gallery)
     // CATEGORY_AUDIO = 1 (Audio / Music)
-    if (category == 7 || category == 6 || category == 5 || category == 3 || category == 1) {
+    if (category == 7 ||
+        category == 6 ||
+        category == 5 ||
+        category == 3 ||
+        category == 1) {
       // Safety check: ensure game or TikTok hasn't somehow spoofed category
-      if (!pkg.contains('musically') && !pkg.contains('tiktok') && !name.contains('tiktok')) {
+      if (!pkg.contains('musically') &&
+          !pkg.contains('tiktok') &&
+          !name.contains('tiktok')) {
         return true;
       }
     }
@@ -2777,7 +2946,8 @@ class AppState extends ChangeNotifier {
     for (final dp in developerPackages) {
       if (pkg == dp || pkg.contains(dp)) return true;
     }
-    if (pkg.contains('testerscommunity') || name.contains('testers community')) {
+    if (pkg.contains('testerscommunity') ||
+        name.contains('testers community')) {
       return true;
     }
 
@@ -2790,7 +2960,10 @@ class AppState extends ChangeNotifier {
     for (final nav in navigationPackages) {
       if (pkg == nav || pkg.contains(nav)) return true;
     }
-    if (name == 'maps' || name == 'peta' || name.contains('navigation') || name.contains('navigasi')) {
+    if (name == 'maps' ||
+        name == 'peta' ||
+        name.contains('navigation') ||
+        name.contains('navigasi')) {
       return true;
     }
 
@@ -2882,7 +3055,11 @@ class AppState extends ChangeNotifier {
 
   /// Strictly non-productive apps that can NEVER be marked as productive
   /// (mindless social media scrolling, addictive short videos, dating, games, gambling, adult content, binge streaming).
-  static bool isStrictlyNonProductive(String packageName, String appName, [int category = -1]) {
+  static bool isStrictlyNonProductive(
+    String packageName,
+    String appName, [
+    int category = -1,
+  ]) {
     final pkg = packageName.toLowerCase().trim();
     final name = appName.toLowerCase().trim();
 
@@ -2906,20 +3083,29 @@ class AppState extends ChangeNotifier {
     }
 
     // 1. Android OS Category Game (CATEGORY_GAME = 0) - strictly non-productive without exception
-    final int resolvedCat = category != -1 ? category : getAppCategoryStatic(pkg);
+    final int resolvedCat = category != -1
+        ? category
+        : getAppCategoryStatic(pkg);
     if (resolvedCat == 0) return true;
 
     // 2. Social Media & Short Video Platforms (Mindless Scrolling)
     // TikTok & Musical.ly
-    if (pkg.contains('musically') || pkg.contains('tiktok') || name.contains('tiktok')) {
+    if (pkg.contains('musically') ||
+        pkg.contains('tiktok') ||
+        name.contains('tiktok')) {
       return true;
     }
     // Instagram & Threads
-    if (pkg.contains('instagram') || name.contains('instagram') || pkg.contains('barcelona') || name.contains('threads')) {
+    if (pkg.contains('instagram') ||
+        name.contains('instagram') ||
+        pkg.contains('barcelona') ||
+        name.contains('threads')) {
       return true;
     }
     // Facebook
-    if (pkg.contains('com.facebook.katana') || pkg.contains('com.facebook.lite') || name == 'facebook') {
+    if (pkg.contains('com.facebook.katana') ||
+        pkg.contains('com.facebook.lite') ||
+        name == 'facebook') {
       return true;
     }
     // Twitter / X (Elon Musk's X platform)
@@ -3129,7 +3315,9 @@ class AppState extends ChangeNotifier {
     }
 
     // 3. Video Streaming & Entertainment Binge-Watching Platforms
-    if (pkg == 'com.google.android.youtube' || pkg == 'com.google.android.youtube.tv' || name == 'youtube') {
+    if (pkg == 'com.google.android.youtube' ||
+        pkg == 'com.google.android.youtube.tv' ||
+        name == 'youtube') {
       return true;
     }
     const streamingVideoPackages = [
@@ -3257,7 +3445,9 @@ class AppState extends ChangeNotifier {
       'goodnovel',
     ];
     for (final nk in novelKeywords) {
-      if (name.contains(nk) || pkg.contains(nk.replaceAll(' ', ''))) return true;
+      if (name.contains(nk) || pkg.contains(nk.replaceAll(' ', ''))) {
+        return true;
+      }
     }
 
     // 6. Video Editors for Social Content
@@ -3276,7 +3466,11 @@ class AppState extends ChangeNotifier {
 
   /// Checks if an app is non-productive (games, social media, short-video scrolling, video streaming entertainment, gambling, web novels).
   /// Non-productive apps must be locked by the launcher.
-  static bool isNonProductiveApp(String packageName, String appName, [int category = -1]) {
+  static bool isNonProductiveApp(
+    String packageName,
+    String appName, [
+    int category = -1,
+  ]) {
     final pkg = packageName.toLowerCase().trim();
     final name = appName.toLowerCase().trim();
 
@@ -3406,9 +3600,13 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  Future<void> dismissStandardReflectionAndSkip({int durationMillis = 180000}) async {
+  Future<void> dismissStandardReflectionAndSkip({
+    int durationMillis = 180000,
+  }) async {
     _isStandardReflectionActive = false;
-    await _appBlockService.allowStandardSettingsTemporarily(durationMillis: durationMillis);
+    await _appBlockService.allowStandardSettingsTemporarily(
+      durationMillis: durationMillis,
+    );
     notifyListeners();
   }
 
@@ -3499,7 +3697,8 @@ class AppState extends ChangeNotifier {
 
   void goHome() {
     clearAllOverlays();
-    if (navigatorKey.currentState != null && navigatorKey.currentState!.canPop()) {
+    if (navigatorKey.currentState != null &&
+        navigatorKey.currentState!.canPop()) {
       navigatorKey.currentState!.popUntil((route) => route.isFirst);
     }
   }
@@ -3547,7 +3746,8 @@ class AppState extends ChangeNotifier {
     final cleanPkg = pkg.trim().toLowerCase();
     if (cleanPkg.isNotEmpty) {
       final now = DateTime.now().millisecondsSinceEpoch;
-      if (cleanPkg == _lastGhadhulBasharDismissedPackage && (now - _lastGhadhulBasharDismissedTime) < 4000) {
+      if (cleanPkg == _lastGhadhulBasharDismissedPackage &&
+          (now - _lastGhadhulBasharDismissedTime) < 4000) {
         return;
       }
       _lastAttemptedGhadhulBasharPackage = cleanPkg;
@@ -3585,7 +3785,8 @@ class AppState extends ChangeNotifier {
         if (app == null) continue;
         final pkg = (app['packageName'] as String? ?? '').toLowerCase().trim();
         final name = (app['appName'] as String? ?? '').toLowerCase().trim();
-        if (pkg.isNotEmpty && shouldShowGhadhulBasharReminder(pkg, name, _languageCode)) {
+        if (pkg.isNotEmpty &&
+            shouldShowGhadhulBasharReminder(pkg, name, _languageCode)) {
           targets.add(pkg);
         }
       }
@@ -3823,7 +4024,9 @@ class AppState extends ChangeNotifier {
 
     // 1. Strict validation: Points MUST be at least the cost
     if (_points < effectiveCost || effectiveCost <= 0) {
-      debugPrint("Security guard rejected unlock: User has $_points points, required $effectiveCost points for $pkg");
+      debugPrint(
+        "Security guard rejected unlock: User has $_points points, required $effectiveCost points for $pkg",
+      );
       return false;
     }
 
@@ -3833,7 +4036,10 @@ class AppState extends ChangeNotifier {
     await prefs.setInt('points', _points);
 
     // 3. Register native and local unlock
-    final success = await allowAppTemporarily(pkg, durationMinutes: durationMinutes);
+    final success = await allowAppTemporarily(
+      pkg,
+      durationMinutes: durationMinutes,
+    );
     if (!success) {
       // Rollback points if native registration failed
       _points += effectiveCost;
@@ -3852,20 +4058,30 @@ class AppState extends ChangeNotifier {
     return true;
   }
 
-  Future<bool> allowAppTemporarily(String packageName, {int durationMinutes = 60}) async {
+  Future<bool> allowAppTemporarily(
+    String packageName, {
+    int durationMinutes = 60,
+  }) async {
     final pkg = packageName.toLowerCase();
-    final expiry = DateTime.now().millisecondsSinceEpoch + (durationMinutes * 60 * 1000);
-    
+    final expiry =
+        DateTime.now().millisecondsSinceEpoch + (durationMinutes * 60 * 1000);
+
     _unlockedExpirations[pkg] = expiry;
-    
+
     try {
-      final nativeOk = await _appBlockService.allowAppTemporarily(pkg, durationMinutes: durationMinutes);
+      final nativeOk = await _appBlockService.allowAppTemporarily(
+        pkg,
+        durationMinutes: durationMinutes,
+      );
       if (!nativeOk) {
         _unlockedExpirations.remove(pkg); // Rollback locally if native fails
         notifyListeners();
         return false;
       }
-      await prefs.setString('unlockedExpirations', json.encode(_unlockedExpirations));
+      await prefs.setString(
+        'unlockedExpirations',
+        json.encode(_unlockedExpirations),
+      );
       _startStatusTimer();
       notifyListeners();
       return true;
@@ -3886,10 +4102,10 @@ class AppState extends ChangeNotifier {
     final pkg = packageName.toLowerCase().trim();
     final expiry = _unlockedExpirations[pkg];
     if (expiry == null) return 0;
-    
+
     final diff = expiry - DateTime.now().millisecondsSinceEpoch;
     if (diff <= 0) return 0;
-    
+
     return (diff / (60 * 1000)).ceil();
   }
 
@@ -3922,11 +4138,12 @@ class AppState extends ChangeNotifier {
   ) async {
     // Determine if this is the EXACT next sequential step (+1 ayah)
     bool isNextStep = false;
-    
+
     // Check if same surah and next ayah
-    if (surahIndex == _highestSurahIndex && ayahIndex == _highestAyahIndex + 1) {
+    if (surahIndex == _highestSurahIndex &&
+        ayahIndex == _highestAyahIndex + 1) {
       isNextStep = true;
-    } 
+    }
     // Check if next surah and first ayah, but only if current surah is finished
     else if (surahIndex == _highestSurahIndex + 1 && ayahIndex == 0) {
       if (_highestSurahIndex < _quranData.length) {
@@ -3943,7 +4160,7 @@ class AppState extends ChangeNotifier {
       _highestAyahIndex = ayahIndex;
       await prefs.setInt('highestSurahIndex', surahIndex);
       await prefs.setInt('highestAyahIndex', ayahIndex);
-      
+
       // Update last read only on sequential progress
       _lastReadSurah = surahName;
       _lastReadAyahNumber = ayahNumber;
@@ -3960,19 +4177,23 @@ class AppState extends ChangeNotifier {
     // Always add to history regardless of sequential progress
     _addToHistory(surahName, ayahNumber, pointsEarned);
     await _recordQuranDailyRead();
-    
+
     notifyListeners();
   }
 
   Future<void> _recordQuranDailyRead() async {
     final now = DateTime.now();
     final today = now.toIso8601String().split('T')[0];
-    
+
     if (_lastQuranReadDate == today) {
       return; // Already recorded today
     }
 
-    final yesterday = DateTime(now.year, now.month, now.day - 1).toIso8601String().split('T')[0];
+    final yesterday = DateTime(
+      now.year,
+      now.month,
+      now.day - 1,
+    ).toIso8601String().split('T')[0];
 
     if (_lastQuranReadDate == yesterday) {
       _quranDailyStreak += 1;
@@ -3991,10 +4212,15 @@ class AppState extends ChangeNotifier {
   }
 
   @visibleForTesting
-  Future<void> setQuranStreakForTesting(int streak, {int? maxStreak, String? lastDate}) async {
+  Future<void> setQuranStreakForTesting(
+    int streak, {
+    int? maxStreak,
+    String? lastDate,
+  }) async {
     _quranDailyStreak = streak;
     _maxQuranDailyStreak = maxStreak ?? streak;
-    _lastQuranReadDate = lastDate ?? DateTime.now().toIso8601String().split('T')[0];
+    _lastQuranReadDate =
+        lastDate ?? DateTime.now().toIso8601String().split('T')[0];
     await prefs.setInt('quranDailyStreak', _quranDailyStreak);
     await prefs.setInt('maxQuranDailyStreak', _maxQuranDailyStreak);
     await prefs.setString('lastQuranReadDate', _lastQuranReadDate);
@@ -4004,12 +4230,16 @@ class AppState extends ChangeNotifier {
   Future<void> _recordDzikirDailyRead() async {
     final now = DateTime.now();
     final today = now.toIso8601String().split('T')[0];
-    
+
     if (_lastDzikirDate == today) {
       return; // Already recorded today
     }
 
-    final yesterday = DateTime(now.year, now.month, now.day - 1).toIso8601String().split('T')[0];
+    final yesterday = DateTime(
+      now.year,
+      now.month,
+      now.day - 1,
+    ).toIso8601String().split('T')[0];
 
     if (_lastDzikirDate == yesterday) {
       _dzikirDailyStreak += 1;
@@ -4028,14 +4258,21 @@ class AppState extends ChangeNotifier {
   }
 
   @visibleForTesting
-  Future<void> setDzikirStreakForTesting(int streak, {int? maxStreak, String? lastDate, int? dailyCount}) async {
+  Future<void> setDzikirStreakForTesting(
+    int streak, {
+    int? maxStreak,
+    String? lastDate,
+    int? dailyCount,
+  }) async {
     _dzikirDailyStreak = streak;
     _maxDzikirDailyStreak = maxStreak ?? streak;
-    _lastDzikirDate = lastDate ?? DateTime.now().toIso8601String().split('T')[0];
+    _lastDzikirDate =
+        lastDate ?? DateTime.now().toIso8601String().split('T')[0];
     if (dailyCount != null) {
       _dailyDzikirCount = dailyCount;
       await prefs.setInt('dailyDzikirCount', _dailyDzikirCount);
-    } else if (lastDate != null && lastDate != DateTime.now().toIso8601String().split('T')[0]) {
+    } else if (lastDate != null &&
+        lastDate != DateTime.now().toIso8601String().split('T')[0]) {
       _dailyDzikirCount = 0;
       _dailyDzikirRounds = 0;
       _dailyDzikirPresetRounds = {};
@@ -4078,7 +4315,11 @@ class AppState extends ChangeNotifier {
     }
 
     // New day has arrived:
-    final yesterday = DateTime(now.year, now.month, now.day - 1).toIso8601String().split('T')[0];
+    final yesterday = DateTime(
+      now.year,
+      now.month,
+      now.day - 1,
+    ).toIso8601String().split('T')[0];
 
     if (_dailyPointsSpentDate == yesterday) {
       // Yesterday finished! Check if yesterday was successful (<= 50 points spent)
@@ -4123,7 +4364,12 @@ class AppState extends ChangeNotifier {
   }
 
   @visibleForTesting
-  Future<void> setDisciplineStreakForTesting(int streak, {int? maxStreak, String? lastDate, int? dailyPointsSpent}) async {
+  Future<void> setDisciplineStreakForTesting(
+    int streak, {
+    int? maxStreak,
+    String? lastDate,
+    int? dailyPointsSpent,
+  }) async {
     _disciplineDailyStreak = streak;
     _maxDisciplineDailyStreak = maxStreak ?? streak;
     final date = lastDate ?? DateTime.now().toIso8601String().split('T')[0];
@@ -4140,7 +4386,11 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> claimBadgeReward(String badgeId, int pointsReward, String badgeTitle) async {
+  Future<bool> claimBadgeReward(
+    String badgeId,
+    int pointsReward,
+    String badgeTitle,
+  ) async {
     if (_claimedBadgeIds.contains(badgeId) || pointsReward <= 0) return false;
     _claimedBadgeIds.add(badgeId);
     await prefs.setStringList('claimedBadgeIds', _claimedBadgeIds.toList());
@@ -4151,7 +4401,9 @@ class AppState extends ChangeNotifier {
     return true;
   }
 
-  Future<int> claimAllBadgeRewards(List<Map<String, dynamic>> claimableBadges) async {
+  Future<int> claimAllBadgeRewards(
+    List<Map<String, dynamic>> claimableBadges,
+  ) async {
     if (claimableBadges.isEmpty) return 0;
     int totalClaimed = 0;
     for (final item in claimableBadges) {
@@ -4182,10 +4434,11 @@ class AppState extends ChangeNotifier {
 
   bool canEarnPoints(int surahIndex, int ayahIndex) {
     // Points are earned ONLY if it's the exact next step
-    if (surahIndex == _highestSurahIndex && ayahIndex == _highestAyahIndex + 1) {
+    if (surahIndex == _highestSurahIndex &&
+        ayahIndex == _highestAyahIndex + 1) {
       return true;
     }
-    
+
     if (surahIndex == _highestSurahIndex + 1 && ayahIndex == 0) {
       if (_highestSurahIndex < _quranData.length) {
         final currentSurah = _quranData[_highestSurahIndex];
@@ -4193,7 +4446,7 @@ class AppState extends ChangeNotifier {
         return _highestAyahIndex == totalAyahs - 1;
       }
     }
-    
+
     return false;
   }
 
@@ -4228,7 +4481,8 @@ class AppState extends ChangeNotifier {
 
   bool isNextAyah(int surahIndex, int ayahIndex) {
     // Exact same logic as point earning
-    if (surahIndex == _highestSurahIndex && ayahIndex == _highestAyahIndex + 1) {
+    if (surahIndex == _highestSurahIndex &&
+        ayahIndex == _highestAyahIndex + 1) {
       return true;
     }
     if (surahIndex == _highestSurahIndex + 1 && ayahIndex == 0) {
@@ -4254,10 +4508,12 @@ class AppState extends ChangeNotifier {
       'points': pointsEarned,
       'timestamp': DateTime.now().millisecondsSinceEpoch,
     };
-    
+
     _readingHistory.insert(0, entry); // Newest first
-    if (_readingHistory.length > 50) _readingHistory.removeLast(); // Keep last 50
-    
+    if (_readingHistory.length > 50) {
+      _readingHistory.removeLast(); // Keep last 50
+    }
+
     prefs.setString('readingHistory', json.encode(_readingHistory));
   }
 
@@ -4276,7 +4532,11 @@ class AppState extends ChangeNotifier {
     return basePoints.clamp(2, 4);
   }
 
-  Future<int> saveHadithProgress(int hadithId, String hadithTitle, int pointsEarned) async {
+  Future<int> saveHadithProgress(
+    int hadithId,
+    String hadithTitle,
+    int pointsEarned,
+  ) async {
     final today = DateTime.now().toIso8601String().split('T')[0];
     final lastHadithDate = prefs.getString('lastHadithDate') ?? '';
     if (lastHadithDate != today) {
@@ -4287,12 +4547,16 @@ class AppState extends ChangeNotifier {
     // Option 1 Hadith Economy:
     // First 3 distinct hadiths of the day earn full points (2-4).
     // Subsequent hadiths or repeat reads of already read hadiths earn 1 point.
-    final int pointsToAward = (_readHadithIds.contains(hadithId) || _readHadithIds.length >= 3)
+    final int pointsToAward =
+        (_readHadithIds.contains(hadithId) || _readHadithIds.length >= 3)
         ? 1
         : pointsEarned.clamp(2, 4);
 
     _readHadithIds.add(hadithId);
-    await prefs.setStringList('readHadithIds', _readHadithIds.map((e) => e.toString()).toList());
+    await prefs.setStringList(
+      'readHadithIds',
+      _readHadithIds.map((e) => e.toString()).toList(),
+    );
     await prefs.setString('lastHadithDate', today);
 
     if (pointsToAward > 0) {
@@ -4306,10 +4570,16 @@ class AppState extends ChangeNotifier {
   }
 
   @visibleForTesting
-  Future<void> setHadithStateForTesting({Set<int>? readIds, String? lastDate}) async {
+  Future<void> setHadithStateForTesting({
+    Set<int>? readIds,
+    String? lastDate,
+  }) async {
     if (readIds != null) {
       _readHadithIds = readIds;
-      await prefs.setStringList('readHadithIds', _readHadithIds.map((e) => e.toString()).toList());
+      await prefs.setStringList(
+        'readHadithIds',
+        _readHadithIds.map((e) => e.toString()).toList(),
+      );
     }
     if (lastDate != null) {
       await prefs.setString('lastHadithDate', lastDate);
@@ -4320,7 +4590,8 @@ class AppState extends ChangeNotifier {
   @visibleForTesting
   void setDailyAyahsReadForTesting(int count, {String? date}) {
     _dailyAyahsReadCount = count;
-    _dailyAyahsReadDate = date ?? DateTime.now().toIso8601String().split('T')[0];
+    _dailyAyahsReadDate =
+        date ?? DateTime.now().toIso8601String().split('T')[0];
     prefs.setInt('dailyAyahsReadCount', _dailyAyahsReadCount);
     prefs.setString('dailyAyahsReadDate', _dailyAyahsReadDate);
     notifyListeners();
@@ -4354,7 +4625,9 @@ class AppState extends ChangeNotifier {
     required int totalAyahs,
     int readingDurationSeconds = 0,
   }) async {
-    final bool isAlreadyCompleted = _completedSurahsThisCycle.contains(surahNumber);
+    final bool isAlreadyCompleted = _completedSurahsThisCycle.contains(
+      surahNumber,
+    );
     if (isAlreadyCompleted) {
       return {
         'isNewMilestone': false,
@@ -4401,7 +4674,9 @@ class AppState extends ChangeNotifier {
 
       // Progressive Grand Khatam Bonus for completing all 30 Juz (114 Surahs)
       // Khatam 1: +500, Khatam 2: +750, Khatam 3: +1000, Khatam 4: +1250, Khatam 5+: +1500
-      final int grandKhatamPoints = QuranProgressHelper.getGrandKhatamBonus(_khatmCount);
+      final int grandKhatamPoints = QuranProgressHelper.getGrandKhatamBonus(
+        _khatmCount,
+      );
       _points += grandKhatamPoints;
       await prefs.setInt('points', _points);
 
@@ -4563,13 +4838,17 @@ class AppState extends ChangeNotifier {
 
     final presetRound = (_dailyDzikirPresetRounds[dzikirTitle] ?? 0) + 1;
     _dailyDzikirPresetRounds[dzikirTitle] = presetRound;
-    await prefs.setString('dailyDzikirPresetRounds', jsonEncode(_dailyDzikirPresetRounds));
+    await prefs.setString(
+      'dailyDzikirPresetRounds',
+      jsonEncode(_dailyDzikirPresetRounds),
+    );
 
     // Base points: 5 points for round 1 per preset; 2 points for repeat rounds
     final int baseAllocatedPoints = (presetRound == 1) ? 5 : 2;
 
     // Apply Maqam Point Boost Multiplier (strictly whole integer, rounded)
-    final int allocatedPoints = (baseAllocatedPoints * maqamBoostMultiplier).round();
+    final int allocatedPoints = (baseAllocatedPoints * maqamBoostMultiplier)
+        .round();
 
     if (allocatedPoints > 0) {
       _points += allocatedPoints;
@@ -4632,13 +4911,13 @@ class AppState extends ChangeNotifier {
     final pkg = packageName.toLowerCase().trim();
     if (isProductiveApp(pkg, '')) return false;
     if (!_blockedApps.contains(pkg)) return false;
-    
+
     // Check if temporarily allowed
     final expiry = _unlockedExpirations[pkg];
     if (expiry != null && DateTime.now().millisecondsSinceEpoch < expiry) {
       return false;
     }
-    
+
     return true;
   }
 }
