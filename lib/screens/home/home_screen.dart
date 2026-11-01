@@ -165,77 +165,9 @@ class _HomeScreenState extends State<HomeScreen>
           .then((_) {
             if (!mounted) return;
             setState(() {});
-            _checkAccessibilityStatus();
           })
           .catchError((_) {});
     });
-  }
-
-  Future<void> _checkAccessibilityStatus() async {
-    final appState = Provider.of<AppState>(context, listen: false);
-
-    // In passive mode, accessibility is not required/prompted
-    if (appState.isPassiveMode) return;
-
-    // 1. If it's already enabled, do nothing.
-    if (appState.isAccessibilityEnabled) return;
-
-    // 2. Only show the DISRUPTIVE dialog if they've never seen the setup before.
-    // If they have seen it, but it's still off, the UI Banner (below in build) will remind them.
-    final shouldShowDialog = !appState.hasSeenAccessibilitySetup;
-
-    if (shouldShowDialog && mounted) {
-      _showAccessibilitySetupPrompt();
-    }
-  }
-
-  void _showAccessibilitySetupPrompt() {
-    final appState = Provider.of<AppState>(context, listen: false);
-    // Explicitly check if the service is already enabled to avoid redundant prompts
-    if (appState.isAccessibilityEnabled) return;
-
-    appState.setHasSeenAccessibilitySetup(true);
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: const Row(
-          children: [
-            Icon(Icons.security_rounded, color: Colors.teal),
-            SizedBox(width: 12),
-            Text('Aktifkan Blokir'),
-          ],
-        ),
-        content: const Text(
-          'Beberapa aplikasi non-produktif telah Anda kunci. Agar layar kunci Poin Ibadah dan pengingat Ghadhul Bashar bekerja otomatis, Anda perlu mengaktifkan Layanan Aksesibilitas (AccessibilityService API). Seluruh deteksi diproses secara lokal di perangkat Anda dan tidak ada data pribadi yang dikumpulkan atau dibagikan.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Nanti Saja'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.teal,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            onPressed: () {
-              appState.setIgnorePermissionGuard(true);
-              Navigator.pop(ctx);
-              appState.navigatorKey.currentState
-                  ?.push(AppPageRoute(child: const AccessibilitySetupScreen()))
-                  .then((_) => appState.setIgnorePermissionGuard(false));
-            },
-            child: const Text('Setup Sekarang'),
-          ),
-        ],
-      ),
-    );
   }
 
   @override
@@ -244,7 +176,6 @@ class _HomeScreenState extends State<HomeScreen>
       // Refresh status on re-entry
       final appState = Provider.of<AppState>(context, listen: false);
       appState.refreshStatus();
-      _checkAccessibilityStatus();
 
       // Only preload if cache is empty (first launch or after invalidateFull from install/uninstall).
       // Native 'onAppListChanged' callback already handles install/uninstall events via invalidateFull.

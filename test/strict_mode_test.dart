@@ -34,12 +34,11 @@ void main() {
   });
 
   group('2-Mode System (Standard & Passive) & Compliance Tests', () {
-    test('Default mode state defaults to Standard Mode (isStrictMode = false)', () async {
+    test('Default mode state defaults to Standard Mode', () async {
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
       final state = AppState(prefs);
 
-      expect(state.isStrictMode, isFalse);
       expect(state.launcherMode, equals('standard'));
       expect(state.isPassiveMode, isFalse);
       expect(state.isAccessibilityRequired, isTrue);
@@ -56,8 +55,6 @@ void main() {
       final state = AppState(prefs);
       await Future.delayed(const Duration(milliseconds: 50));
 
-      expect(state.isStrictMode, isFalse);
-      expect(state.isStrictActiveNow, isFalse);
       expect(state.launcherMode, equals('standard'));
       expect(prefs.getBool('is_strict_mode'), isFalse);
       expect(prefs.getString('launcher_mode'), equals('standard'));
@@ -72,26 +69,9 @@ void main() {
 
       await state.enableStandardMode();
 
-      expect(state.isStrictMode, isFalse);
       expect(state.isPassiveMode, isFalse);
       expect(state.launcherMode, equals('standard'));
       expect(prefs.getString('launcher_mode'), equals('standard'));
-    });
-
-    test('Standard Mode reflection state defaults to false and reacts to dismiss and clear', () async {
-      SharedPreferences.setMockInitialValues({});
-      final prefs = await SharedPreferences.getInstance();
-      final state = AppState(prefs);
-
-      expect(state.isStandardReflectionActive, isFalse);
-      expect(state.hasActiveOverlay, isFalse);
-
-      // Dismiss and skip
-      await state.dismissStandardReflectionAndSkip(durationMillis: 60000);
-      expect(state.isStandardReflectionActive, isFalse);
-
-      state.clearStandardReflection();
-      expect(state.isStandardReflectionActive, isFalse);
     });
 
     test('enablePassiveMode sets launcherMode to passive and isAccessibilityRequired to false', () async {
@@ -100,7 +80,6 @@ void main() {
       final state = AppState(prefs);
 
       await state.enablePassiveMode();
-      expect(state.isStrictMode, isFalse);
       expect(state.isPassiveMode, isTrue);
       expect(state.launcherMode, 'passive');
       expect(state.isAccessibilityRequired, isFalse);

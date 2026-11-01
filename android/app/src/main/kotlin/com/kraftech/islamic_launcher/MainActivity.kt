@@ -8,8 +8,6 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.graphics.Bitmap
 import android.graphics.Canvas
-import android.graphics.drawable.AdaptiveIconDrawable
-import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.media.MediaScannerConnection
 import android.net.Uri
@@ -112,41 +110,6 @@ class MainActivity : FlutterActivity() {
             pendingProhibitedPackage = cleanPkg
             uiHandler.post {
                 blockChannel?.invokeMethod("onProhibitedAppTriggered", mapOf("packageName" to cleanPkg))
-            }
-        }
-
-        var pendingStrictShieldReason: String? = null
-        private var lastNotifiedStrictShieldTime: Long = 0L
-
-        fun notifyStrictShieldTriggered(reason: String) {
-            val now = System.currentTimeMillis()
-            if ((now - lastNotifiedStrictShieldTime) < 2000L) {
-                return
-            }
-            lastNotifiedStrictShieldTime = now
-            pendingStrictShieldReason = reason
-            uiHandler.post {
-                blockChannel?.invokeMethod("onStrictShieldTriggered", mapOf("reason" to reason))
-            }
-        }
-
-        var pendingStandardReflection: Boolean = false
-        var lastNotifiedReflectionTime: Long = 0L
-
-        fun resetReflectionDebounce() {
-            lastNotifiedReflectionTime = 0L
-            pendingStandardReflection = false
-        }
-
-        fun notifyStandardReflectionTriggered() {
-            val now = System.currentTimeMillis()
-            if ((now - lastNotifiedReflectionTime) < 400L) {
-                return
-            }
-            lastNotifiedReflectionTime = now
-            pendingStandardReflection = true
-            uiHandler.post {
-                blockChannel?.invokeMethod("onStandardReflectionTriggered", null)
             }
         }
     }
@@ -389,37 +352,9 @@ class MainActivity : FlutterActivity() {
                     AppBlockService.updateProhibitedPackages(this, apps)
                     result.success(true)
                 }
-                "isDeviceAdminActive" -> {
-                    result.success(isDeviceAdminActive())
-                }
-                "requestDeviceAdmin" -> {
-                    requestDeviceAdmin()
-                    result.success(true)
-                }
-                "setStrictModeConfig" -> {
-                    val enabled = call.argument<Boolean>("enabled") ?: false
-                    val days = call.argument<Int>("days") ?: 30
-                    val untilMs = when (val raw = call.argument<Any>("untilMs")) {
-                        is Number -> raw.toLong()
-                        else -> 0L
-                    }
-                    AppBlockService.updateStrictModeConfig(this, enabled, days, untilMs)
-                    result.success(true)
-                }
-                "getStrictModeStatus" -> {
-                    val status = AppBlockService.getStrictModeStatus(this)
-                    result.success(status)
-                }
                 "setOnboardingCompleted" -> {
                     val completed = call.argument<Boolean>("completed") ?: false
                     AppBlockService.setOnboardingCompleted(this, completed)
-                    result.success(true)
-                }
-                "resetStandardReflectionDebounce" -> {
-                    AppBlockService.resetStandardSettingsBypass()
-                    result.success(true)
-                }
-                "allowStandardSettingsTemporarily" -> {
                     result.success(true)
                 }
                 "getPendingInitialBlock" -> {
@@ -427,16 +362,12 @@ class MainActivity : FlutterActivity() {
                         "blocked" to pendingBlockedPackage,
                         "ghadhul" to pendingGhadhulBasharPackage,
                         "ghadhulExtra" to pendingGhadhulBasharExtra,
-                        "prohibited" to pendingProhibitedPackage,
-                        "strictShield" to pendingStrictShieldReason,
-                        "standardReflection" to pendingStandardReflection
+                        "prohibited" to pendingProhibitedPackage
                     )
                     pendingBlockedPackage = null
                     pendingGhadhulBasharPackage = null
                     pendingGhadhulBasharExtra = ""
                     pendingProhibitedPackage = null
-                    pendingStrictShieldReason = null
-                    pendingStandardReflection = false
                     result.success(resultData)
                 }
                 else -> result.notImplemented()
@@ -453,18 +384,14 @@ class MainActivity : FlutterActivity() {
         
         val isOverlayIntent = intent.getBooleanExtra("triggerBlockScreen", false) ||
             intent.getBooleanExtra("triggerProhibitedScreen", false) ||
-            intent.getBooleanExtra("triggerGhadhulBasharScreen", false) ||
-            intent.getBooleanExtra("triggerStrictShieldScreen", false) ||
-            intent.getBooleanExtra("triggerStandardReflectionScreen", false)
+            intent.getBooleanExtra("triggerGhadhulBasharScreen", false)
 
         handleIntent(intent)
 
         if (intent.action == Intent.ACTION_MAIN && intent.hasCategory(Intent.CATEGORY_HOME) && !isOverlayIntent) {
             val hasPendingBlock = !pendingBlockedPackage.isNullOrEmpty() ||
                 !pendingProhibitedPackage.isNullOrEmpty() ||
-                !pendingGhadhulBasharPackage.isNullOrEmpty() ||
-                !pendingStrictShieldReason.isNullOrEmpty() ||
-                pendingStandardReflection
+                !pendingGhadhulBasharPackage.isNullOrEmpty()
             if (!hasPendingBlock) {
                 appsChannel?.invokeMethod("onHomePressed", null)
             }
@@ -473,7 +400,6 @@ class MainActivity : FlutterActivity() {
 
     override fun onResume() {
         super.onResume()
-        AppBlockService.resetStandardSettingsBypass(force = true)
         // Replay any pending block events that arrived while the activity was paused.
         // The accessibility service may have set pendingBlockedPackage etc. while we were
         // in background — now that we're back, deliver them to Flutter.
@@ -509,20 +435,6 @@ class MainActivity : FlutterActivity() {
                 uiHandler.post {
                     bc.invokeMethod("onGhadhulBasharTriggered", mapOf("packageName" to pkg, "extraInfo" to extra))
                 }
-            }
-        }
-        pendingStrictShieldReason?.let { reason ->
-            if (reason.isNotEmpty()) {
-                lastNotifiedStrictShieldTime = 0L
-                uiHandler.post {
-                    bc.invokeMethod("onStrictShieldTriggered", mapOf("reason" to reason))
-                }
-            }
-        }
-        if (pendingStandardReflection) {
-            lastNotifiedReflectionTime = 0L
-            uiHandler.post {
-                bc.invokeMethod("onStandardReflectionTriggered", null)
             }
         }
     }
@@ -563,16 +475,6 @@ class MainActivity : FlutterActivity() {
                 lastNotifiedProhibitedTime = 0L
                 notifyAppProhibited(prohibitedPackage)
             }
-        }
-        if (intent.getBooleanExtra("triggerStrictShieldScreen", false)) {
-            val reason = intent.getStringExtra("strictShieldReason") ?: "app_details"
-            intent.removeExtra("triggerStrictShieldScreen")
-            intent.removeExtra("strictShieldReason")
-            notifyStrictShieldTriggered(reason)
-        }
-        if (intent.getBooleanExtra("triggerStandardReflectionScreen", false)) {
-            intent.removeExtra("triggerStandardReflectionScreen")
-            intent.removeExtra("standardReflectionSource")
         }
     }
 
@@ -768,15 +670,6 @@ class MainActivity : FlutterActivity() {
         }
         startActivity(intent)
     }
-
-    private fun isDeviceAdminActive(): Boolean {
-        return false
-    }
-
-    private fun requestDeviceAdmin() {
-        // Device Admin has been removed for Google Play compliance
-    }
-
 
     private fun isDefaultLauncher(): Boolean {
         return try {

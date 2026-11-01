@@ -113,38 +113,13 @@ class AppState extends ChangeNotifier {
   Timer? _statusTimer;
 
   // Mode Fields (Standard & Passive)
-  bool _isStrictMode = false;
   String _launcherMode = 'standard'; // 'standard', 'passive'
   bool _hasSelectedMode = false;
-  int _strictModeDays = 0;
-  int _strictModeUntilMs = 0;
-  bool _isDeviceAdminActive = false;
-  String? _lastAttemptedStrictShieldReason;
-  bool _isStandardReflectionActive = false;
 
-  bool get isStrictMode => _isStrictMode;
   String get launcherMode => _launcherMode;
   bool get hasSelectedMode => _hasSelectedMode;
   bool get isPassiveMode => _launcherMode == 'passive';
   bool get isAccessibilityRequired => !isPassiveMode;
-  int get strictModeDays => _strictModeDays;
-  int get strictModeUntilMs => _strictModeUntilMs;
-  bool get isDeviceAdminActive => _isDeviceAdminActive;
-  String? get lastAttemptedStrictShieldReason =>
-      _lastAttemptedStrictShieldReason;
-  bool get isStandardReflectionActive => _isStandardReflectionActive;
-
-  bool get isStrictActiveNow {
-    if (!_isStrictMode) return false;
-    final now = DateTime.now().millisecondsSinceEpoch;
-    return _strictModeUntilMs > 0 && now < _strictModeUntilMs;
-  }
-
-  Duration get remainingStrictDuration {
-    if (!isStrictActiveNow) return Duration.zero;
-    final diff = _strictModeUntilMs - DateTime.now().millisecondsSinceEpoch;
-    return diff > 0 ? Duration(milliseconds: diff) : Duration.zero;
-  }
 
   final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -639,9 +614,6 @@ class AppState extends ChangeNotifier {
           prefs.getBool('hasSeenAccessibilitySetup') ?? false;
       _hasAcknowledgedAutostart =
           prefs.getBool('hasAcknowledgedAutostart') ?? false;
-      _isStrictMode = false;
-      _strictModeDays = 0;
-      _strictModeUntilMs = 0;
       final savedMode = prefs.getString('launcher_mode') ?? 'standard';
       _launcherMode = (savedMode == 'passive') ? 'passive' : 'standard';
       _hasSelectedMode =
@@ -650,7 +622,6 @@ class AppState extends ChangeNotifier {
       if (savedMode == 'strict' || (prefs.getBool('is_strict_mode') ?? false)) {
         await prefs.setBool('is_strict_mode', false);
         await prefs.setString('launcher_mode', _launcherMode);
-        await prefs.setInt('strict_mode_until_ms', 0);
       }
 
       _highestSurahIndex = prefs.getInt('highestSurahIndex') ?? 0;
@@ -901,15 +872,6 @@ class AppState extends ChangeNotifier {
             notifyListeners();
           }
         },
-        onStrictShieldTriggered: (reason) {
-          if (isPassiveMode) return;
-          _lastStrictShieldEventTime = DateTime.now().millisecondsSinceEpoch;
-          _lastAttemptedStrictShieldReason = reason;
-          notifyListeners();
-        },
-        onStandardReflectionTriggered: () {
-          // Standard reflection overlay removed for standard mode
-        },
       );
       _appBlockService.setBlockedApps(_blockedApps.toList());
       syncGhadhulBasharPackages();
@@ -927,8 +889,7 @@ class AppState extends ChangeNotifier {
           final isRecentlyTriggered =
               (now - _lastBlockedEventTime < 3000) ||
               (now - _lastGhadhulEventTime < 3000) ||
-              (now - _lastProhibitedEventTime < 3000) ||
-              (now - _lastStrictShieldEventTime < 3000);
+              (now - _lastProhibitedEventTime < 3000);
           if (hasActiveOverlay && !isRecentlyTriggered) {
             clearAllOverlays();
           } else if (!hasActiveOverlay) {
@@ -991,14 +952,6 @@ class AppState extends ChangeNotifier {
             .isAccessibilityEnabled();
         final defRes = await appsChannel.invokeMethod('isDefaultLauncher');
         _isDefaultLauncher = defRes is bool ? defRes : false;
-        _isDeviceAdminActive = await _appBlockService.isDeviceAdminActive();
-
-        // Sync strict mode state to native service on startup
-        await _appBlockService.setStrictModeConfig(
-          enabled: _isStrictMode && isStrictActiveNow,
-          days: _strictModeDays,
-          untilMs: _strictModeUntilMs,
-        );
       } catch (_) {}
 
       _isInitialized = true;
@@ -1049,12 +1002,6 @@ class AppState extends ChangeNotifier {
           _lastAttemptedBlockedPackage = null;
           changed = true;
         }
-        final pendingStrict = data['strictShield'] as String?;
-        if (pendingStrict != null && pendingStrict.isNotEmpty) {
-          _lastStrictShieldEventTime = DateTime.now().millisecondsSinceEpoch;
-          _lastAttemptedStrictShieldReason = pendingStrict;
-          changed = true;
-        }
 
         if (changed) notifyListeners();
       }
@@ -1063,26 +1010,6 @@ class AppState extends ChangeNotifier {
 
   void refreshStatus() async {
     bool changed = false;
-
-    // Check if strict mode duration expired during app session
-    final storedUntil =
-        prefs.getInt('strict_mode_until_ms') ?? _strictModeUntilMs;
-    _strictModeUntilMs = storedUntil;
-    final now = DateTime.now().millisecondsSinceEpoch;
-    if (_isStrictMode && _strictModeUntilMs > 0 && now >= _strictModeUntilMs) {
-      _isStrictMode = false;
-      _launcherMode = 'standard';
-      _strictModeUntilMs = 0;
-      await prefs.setBool('is_strict_mode', false);
-      await prefs.setString('launcher_mode', 'standard');
-      await prefs.setInt('strict_mode_until_ms', 0);
-      await _appBlockService.setStrictModeConfig(
-        enabled: false,
-        days: _strictModeDays,
-        untilMs: 0,
-      );
-      changed = true;
-    }
 
     // 1. Accessibility Check
     try {
@@ -1103,15 +1030,6 @@ class AppState extends ChangeNotifier {
       );
       if (defEnabled != _isDefaultLauncher) {
         _isDefaultLauncher = defEnabled;
-        changed = true;
-      }
-    } catch (_) {}
-
-    // 3. Device Admin Check
-    try {
-      final adminActive = await _appBlockService.isDeviceAdminActive();
-      if (adminActive != _isDeviceAdminActive) {
-        _isDeviceAdminActive = adminActive;
         changed = true;
       }
     } catch (_) {}
@@ -3632,7 +3550,6 @@ class AppState extends ChangeNotifier {
   int _lastBlockedEventTime = 0;
   int _lastGhadhulEventTime = 0;
   int _lastProhibitedEventTime = 0;
-  int _lastStrictShieldEventTime = 0;
 
   void setProhibitedPackage(String pkg) {
     final cleanPkg = pkg.trim().toLowerCase();
@@ -3648,9 +3565,7 @@ class AppState extends ChangeNotifier {
       !isPassiveMode &&
       ((_lastAttemptedProhibitedPackage?.isNotEmpty ?? false) ||
           (_lastAttemptedBlockedPackage?.isNotEmpty ?? false) ||
-          (_lastAttemptedGhadhulBasharPackage?.isNotEmpty ?? false) ||
-          (_lastAttemptedStrictShieldReason?.isNotEmpty ?? false) ||
-          _isStandardReflectionActive);
+          (_lastAttemptedGhadhulBasharPackage?.isNotEmpty ?? false));
 
   void clearAllOverlays() {
     bool changed = false;
@@ -3671,96 +3586,28 @@ class AppState extends ChangeNotifier {
       _lastAttemptedGhadhulBasharExtra = null;
       changed = true;
     }
-    if (_lastAttemptedStrictShieldReason != null) {
-      _lastAttemptedStrictShieldReason = null;
-      changed = true;
-    }
-    if (_isStandardReflectionActive) {
-      _isStandardReflectionActive = false;
-      appBlockService.resetStandardReflectionDebounce();
-      changed = true;
-    }
     if (changed) {
       notifyListeners();
     }
   }
 
-  Future<void> dismissStandardReflectionAndSkip({
-    int durationMillis = 180000,
-  }) async {
-    _isStandardReflectionActive = false;
-    await _appBlockService.allowStandardSettingsTemporarily(
-      durationMillis: durationMillis,
-    );
-    notifyListeners();
-  }
-
-  void clearStandardReflection() {
-    if (_isStandardReflectionActive) {
-      _isStandardReflectionActive = false;
-      appBlockService.resetStandardReflectionDebounce();
-      notifyListeners();
-    }
-  }
-
-  Future<void> enableStrictMode(int days) async {
-    await enableStandardMode();
-  }
-
   Future<void> enableStandardMode() async {
     _launcherMode = 'standard';
-    _isStrictMode = false;
-    _strictModeUntilMs = 0;
     _hasSelectedMode = true;
     await prefs.setString('launcher_mode', 'standard');
     await prefs.setBool('is_strict_mode', false);
-    await prefs.setInt('strict_mode_until_ms', 0);
     await prefs.setBool('has_selected_mode', true);
-    await _appBlockService.setStrictModeConfig(
-      enabled: false,
-      days: _strictModeDays,
-      untilMs: 0,
-    );
     notifyListeners();
   }
 
   Future<void> enablePassiveMode() async {
     _launcherMode = 'passive';
-    _isStrictMode = false;
-    _strictModeUntilMs = 0;
     _hasSelectedMode = true;
     clearAllOverlays();
     await prefs.setString('launcher_mode', 'passive');
     await prefs.setBool('is_strict_mode', false);
-    await prefs.setInt('strict_mode_until_ms', 0);
     await prefs.setBool('has_selected_mode', true);
-    await _appBlockService.setStrictModeConfig(
-      enabled: false,
-      days: 0,
-      untilMs: 0,
-    );
     notifyListeners();
-  }
-
-  Future<void> refreshDeviceAdminStatus() async {
-    try {
-      final active = await _appBlockService.isDeviceAdminActive();
-      if (active != _isDeviceAdminActive) {
-        _isDeviceAdminActive = active;
-        notifyListeners();
-      }
-    } catch (_) {}
-  }
-
-  Future<void> requestDeviceAdmin() async {
-    await _appBlockService.requestDeviceAdmin();
-  }
-
-  void clearStrictShieldReason() {
-    if (_lastAttemptedStrictShieldReason != null) {
-      _lastAttemptedStrictShieldReason = null;
-      notifyListeners();
-    }
   }
 
   void goHome() {

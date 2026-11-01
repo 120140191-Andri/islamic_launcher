@@ -4,7 +4,6 @@ import android.accessibilityservice.AccessibilityService
 import android.app.ActivityOptions
 import android.app.PendingIntent
 import android.content.Context
-import android.content.ComponentName
 import android.content.Intent
 import android.view.accessibility.AccessibilityEvent
 import android.util.Log
@@ -42,24 +41,6 @@ class AppBlockService : AccessibilityService() {
         private var lastProhibitedTriggerTime: Long = 0L
         @Volatile
         private var lastProhibitedBringToFrontTime: Long = 0L
-        @Volatile
-        private var lastStrictShieldBringToFrontTime: Long = 0L
-
-        // Strict Mode state tracking
-        @Volatile
-        private var isStrictModeEnabled: Boolean = false
-        @Volatile
-        private var strictModeUntil: Long = 0L
-        @Volatile
-        private var strictModeDays: Int = 30
-        @Volatile
-        private var lastKnownTimestamp: Long = 0L
-
-        // Strict Shield Watchdog: re-checks Settings for bypass attempts via Recent Apps
-        @Volatile
-        private var strictShieldWatchdogActive: Boolean = false
-        @Volatile
-        private var strictShieldWatchdogUntil: Long = 0L
 
         // Transition Shield: Prevent loop during the first 10 seconds of unlock
         private var lastBypassPackage: String? = null
@@ -69,13 +50,6 @@ class AppBlockService : AccessibilityService() {
         // One-time bypass for opening Developer Support (Trakteer / Ko-fi) links
         @Volatile
         private var bypassSupportDeveloperUntil: Long = 0L
-
-        // Standard Mode temporary bypass for accessing settings / play store after clicking "Lewati"
-        @Volatile
-        private var standardModeBypassExpiry: Long = 0L
-
-        @Volatile
-        var lastStandardReflectionSource: String = "settings"
 
         @Volatile
         var hasCompletedOnboarding: Boolean = false
@@ -103,48 +77,6 @@ class AppBlockService : AccessibilityService() {
                     return true
                 }
             } catch (_: Exception) {}
-            return false
-        }
-
-        @Volatile
-        private var serviceConnectedTime: Long = 0L
-
-        @Volatile
-        private var lastBypassGrantTime: Long = 0L
-
-        @Volatile
-        private var hasEnteredBypassedScreen: Boolean = false
-
-        fun allowStandardSettingsTemporarily(durationMillis: Long) {
-            val now = System.currentTimeMillis()
-            standardModeBypassExpiry = now + durationMillis
-            lastBypassGrantTime = now
-            hasEnteredBypassedScreen = false
-            Log.d("AppBlockService", "STANDARD MODE SETTINGS BYPASS GRANTED until $standardModeBypassExpiry (visit active)")
-        }
-
-        fun resetStandardSettingsBypass(force: Boolean = false) {
-            val now = System.currentTimeMillis()
-            // 3.5s grace period immediately after clicking "Lewati" to protect screen launch transition
-            if (!force && (now - lastBypassGrantTime) < 3500L) {
-                return
-            }
-            standardModeBypassExpiry = 0L
-            hasEnteredBypassedScreen = false
-            lastTriggeredPackage = null
-            lastTriggeredTime = 0L
-            MainActivity.resetReflectionDebounce()
-            Log.d("AppBlockService", "STANDARD SETTINGS BYPASS & DEBOUNCE RESET (session ended, force=$force)")
-        }
-
-        @Volatile
-        var deviceAdminActivationBypassUntil: Long = 0L
-
-        fun allowDeviceAdminActivationTemporarily() {
-            // No-op: Device Admin removed for Google Play compliance
-        }
-
-        fun isDeviceAdminActive(context: Context?): Boolean {
             return false
         }
 
@@ -461,32 +393,6 @@ class AppBlockService : AccessibilityService() {
             prefs.edit().putStringSet("prohibited_packages", prohibitedPackages.toSet()).commit()
         }
 
-        fun updateStrictModeConfig(context: Context, enabled: Boolean, days: Int, untilMs: Long) {
-            isStrictModeEnabled = false
-            strictModeDays = 0
-            strictModeUntil = 0L
-            val prefs = context.getSharedPreferences("app_block_prefs", Context.MODE_PRIVATE)
-            prefs.edit()
-                .putBoolean("strict_mode_enabled", false)
-                .putInt("strict_mode_days", 0)
-                .putLong("strict_mode_until", 0L)
-                .commit()
-        }
-
-        fun getStrictModeStatus(context: Context): Map<String, Any> {
-            return mapOf(
-                "enabled" to false,
-                "isActive" to false,
-                "days" to 0,
-                "untilMs" to 0L,
-                "remainingMs" to 0L
-            )
-        }
-
-        fun isStrictActive(): Boolean {
-            return false
-        }
-
         private fun getTopmostNode(node: android.view.accessibility.AccessibilityNodeInfo?): android.view.accessibility.AccessibilityNodeInfo? {
             var curr = node ?: return null
             try {
@@ -530,15 +436,6 @@ class AppBlockService : AccessibilityService() {
             facebookBrowserSessionActive.remove(pkg)
             isFbBrowserActive.remove(pkg)
             Log.d("AppBlockService", "GHADHUL SESSION RESET: $pkg")
-        }
-
-        fun clearAllGhadhulSessions() {
-            cancelPendingGhadhulVerification()
-            activeGhadhulSessions.clear()
-            lastActiveGhadhulTimes.clear()
-            facebookBrowserSessionActive.clear()
-            isFbBrowserActive.clear()
-            Log.d("AppBlockService", "ALL GHADHUL SESSIONS CLEARED")
         }
 
         fun isKeyboardOrTransientOverlay(pkg: String?): Boolean {
@@ -784,30 +681,6 @@ class AppBlockService : AccessibilityService() {
                 if (cleanHost == trusted || cleanHost.endsWith(".$trusted")) {
                     return true
                 }
-            }
-            return false
-        }
-
-        private val TRUSTED_NEWS_AND_INFO_DOMAINS = listOf(
-            "detik.com", "kompas.com", "tribunnews.com", "tempo.co", "liputan6.com",
-            "cnnindonesia.com", "cnbcindonesia.com", "kumparan.com", "idntimes.com",
-            "sindonews.com", "suara.com", "merdeka.com", "jawapos.com", "antaranews.com",
-            "republika.co.id", "viva.co.id", "inews.id", "bisnis.com", "kontan.co.id",
-            "tirto.id", "wikipedia.org", "wikimedia.org", "okezone.com", "katadata.co.id",
-            "pikiran-rakyat.com", "medcom.id", "tvonenews.com", "beritasatu.com",
-            "bbc.com", "reuters.com", "aljazeera.com", "nytimes.com", "theguardian.com"
-        )
-
-        fun isTrustedNewsOrGovDomain(text: String): Boolean {
-            val lower = text.lowercase().trim()
-            for (domain in TRUSTED_NEWS_AND_INFO_DOMAINS) {
-                if (containsDomainWithBoundaries(lower, domain)) {
-                    return true
-                }
-            }
-            if (lower.contains(".go.id") || lower.contains(".gov") ||
-                lower.contains(".ac.id") || lower.contains(".edu") || lower.contains(".sch.id")) {
-                return true
             }
             return false
         }
@@ -1312,11 +1185,6 @@ class AppBlockService : AccessibilityService() {
             return false
         }
 
-        fun detectSocialBrowserViolation(
-            event: AccessibilityEvent?,
-            rootNode: android.view.accessibility.AccessibilityNodeInfo?
-        ): FacebookScanResult = detectFacebookBrowserViolation(event, rootNode)
-
         fun detectFacebookBrowserViolation(
             event: AccessibilityEvent?,
             rootNode: android.view.accessibility.AccessibilityNodeInfo?
@@ -1632,10 +1500,6 @@ class AppBlockService : AccessibilityService() {
                 prohibitedPackages.add(pkg.trim().lowercase())
             }
         }
-        isStrictModeEnabled = false
-        strictModeDays = 0
-        strictModeUntil = 0L
-        lastKnownTimestamp = 0L
         hasCompletedOnboarding = isOnboardingCompleted(this)
         loadTemporaryAllowed()
     }
@@ -1685,9 +1549,6 @@ class AppBlockService : AccessibilityService() {
                 }
                 "com.islamiclauncher.BYPASS_SUPPORT_DEV" -> {
                     prepareSupportDeveloperBypass()
-                }
-                "com.islamiclauncher.BYPASS_DEVICE_ADMIN_ACTIVATION" -> {
-                    allowDeviceAdminActivationTemporarily()
                 }
             }
         }
@@ -1796,9 +1657,6 @@ class AppBlockService : AccessibilityService() {
             // Skip our own app
             if (packageName == this.packageName) {
                 currentForegroundPackage = packageName
-                if (hasEnteredBypassedScreen) {
-                    resetStandardSettingsBypass(force = true)
-                }
                 return
             }
 
@@ -2086,7 +1944,6 @@ class AppBlockService : AccessibilityService() {
     override fun onServiceConnected() {
         super.onServiceConnected()
         instance = this
-        serviceConnectedTime = System.currentTimeMillis()
 
         try {
             val info = serviceInfo ?: android.accessibilityservice.AccessibilityServiceInfo()
@@ -2193,7 +2050,6 @@ class AppBlockService : AccessibilityService() {
             putExtra(packageNameKey, cleanPkg)
             putExtra(triggerKey, true)
             if (sourceExtra != null) {
-                putExtra("standardReflectionSource", sourceExtra)
                 putExtra("ghadhulBasharExtraInfo", sourceExtra)
             }
         }
