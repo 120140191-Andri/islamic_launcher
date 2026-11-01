@@ -162,7 +162,7 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen> {
                 _buildModeCard(
                   isSelected: _selectedMode == 'standard',
                   title: Translations.get(lang, 'standard_mode_title'),
-                  badgeText: Translations.get(lang, 'strict_mode_badge'),
+                  badgeText: Translations.get(lang, 'standard_mode_badge'),
                   isRecommended: true,
                   icon: Icons.shield_rounded,
                   onTap: () => setState(() => _selectedMode = 'standard'),
@@ -208,7 +208,7 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen> {
                 _buildModeCard(
                   isSelected: _selectedMode == 'passive',
                   title: Translations.get(lang, 'passive_mode_title'),
-                  badgeText: Translations.get(lang, 'passive_mode_badge'),
+                  badgeText: '',
                   isRecommended: false,
                   isDanger: true,
                   icon: Icons.gpp_maybe_rounded,
@@ -231,9 +231,9 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen> {
                           vertical: 9,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.red.shade50,
+                          color: const Color(0xFFFFFBEB),
                           borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: Colors.red.shade200),
+                          border: Border.all(color: Colors.amber.shade300),
                         ),
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -241,18 +241,16 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen> {
                             Icon(
                               Icons.warning_amber_rounded,
                               size: 18,
-                              color: Colors.red.shade800,
+                              color: Colors.amber.shade900,
                             ),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                isEn
-                                    ? 'App blocking & adult/gambling filters are DISABLED.'
-                                    : 'Pemblokir aplikasi & filter konten dewasa/judi NONAKTIF.',
-                                style: TextStyle(
+                                Translations.get(lang, 'passive_mode_tradeoff'),
+                                style: const TextStyle(
                                   fontSize: 11.5,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.red.shade900,
+                                  color: Color(0xFF78350F),
                                   height: 1.35,
                                 ),
                               ),
@@ -303,7 +301,7 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen> {
                   borderRadius: BorderRadius.circular(16),
                   gradient: _selectedMode == 'passive'
                       ? const LinearGradient(
-                          colors: [Color(0xFFB91C1C), Color(0xFF7F1D1D)],
+                          colors: [Color(0xFFD97706), Color(0xFFB45309)],
                         )
                       : const LinearGradient(
                           colors: [Color(0xFF0F5E3B), Color(0xFF094027)],
@@ -311,7 +309,7 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen> {
                   boxShadow: [
                     BoxShadow(
                       color: _selectedMode == 'passive'
-                          ? Colors.red.shade900.withValues(alpha: 0.28)
+                          ? const Color(0xFFB45309).withValues(alpha: 0.28)
                           : const Color(0xFF0D5C3A).withValues(alpha: 0.28),
                       blurRadius: 12,
                       offset: const Offset(0, 4),
@@ -365,8 +363,9 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen> {
     required Widget child,
     bool isDanger = false,
   }) {
-    final activeColor =
-        isDanger ? Colors.red.shade700 : const Color(0xFF0D5C3A);
+    final activeColor = isDanger
+        ? const Color(0xFFD97706)
+        : const Color(0xFF0D5C3A);
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 250),
@@ -378,7 +377,7 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen> {
           color: isSelected
               ? activeColor
               : (isDanger
-                    ? Colors.red.shade200
+                    ? Colors.amber.shade300
                     : Colors.black.withValues(alpha: 0.08)),
           width: isSelected ? 2.2 : 1,
         ),
@@ -410,7 +409,7 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen> {
                         color: isSelected
                             ? activeColor
                             : (isDanger
-                                  ? Colors.red.shade50
+                                  ? Colors.amber.shade50
                                   : Colors.grey.shade100),
                         shape: BoxShape.circle,
                       ),
@@ -419,7 +418,7 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen> {
                         color: isSelected
                             ? Colors.white
                             : (isDanger
-                                  ? Colors.red.shade700
+                                  ? Colors.amber.shade800
                                   : Colors.grey.shade600),
                         size: 20,
                       ),
@@ -441,45 +440,47 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen> {
                                       : const Color(0xFF1E293B),
                                 ),
                               ),
-                              const SizedBox(width: 8),
-                              Flexible(
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 3,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: isDanger
-                                        ? Colors.red.shade50
-                                        : (isRecommended
-                                              ? const Color(
-                                                  0xFF0D5C3A,
-                                                ).withValues(alpha: 0.1)
-                                              : Colors.grey.shade200),
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: isDanger
-                                        ? Border.all(
-                                            color: Colors.red.shade200,
-                                            width: 0.8,
-                                          )
-                                        : null,
-                                  ),
-                                  child: Text(
-                                    badgeText,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      fontSize: 9.5,
-                                      fontWeight: FontWeight.bold,
+                              if (badgeText.isNotEmpty) ...[
+                                const SizedBox(width: 8),
+                                Flexible(
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 3,
+                                    ),
+                                    decoration: BoxDecoration(
                                       color: isDanger
-                                          ? Colors.red.shade900
+                                          ? Colors.amber.shade50
                                           : (isRecommended
-                                                ? const Color(0xFF0D5C3A)
-                                                : Colors.grey.shade700),
+                                                ? const Color(
+                                                    0xFF0D5C3A,
+                                                  ).withValues(alpha: 0.1)
+                                                : Colors.grey.shade200),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: isDanger
+                                          ? Border.all(
+                                              color: Colors.amber.shade300,
+                                              width: 0.8,
+                                            )
+                                          : null,
+                                    ),
+                                    child: Text(
+                                      badgeText,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 9.5,
+                                        fontWeight: FontWeight.bold,
+                                        color: isDanger
+                                            ? const Color(0xFF78350F)
+                                            : (isRecommended
+                                                  ? const Color(0xFF0D5C3A)
+                                                  : Colors.grey.shade700),
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
+                              ],
                             ],
                           ),
                         ],
@@ -494,7 +495,7 @@ class _ModeSelectionScreenState extends State<ModeSelectionScreen> {
                           color: isSelected
                               ? activeColor
                               : (isDanger
-                                    ? Colors.red.shade300
+                                    ? Colors.amber.shade400
                                     : Colors.grey.shade400),
                           width: 2,
                         ),

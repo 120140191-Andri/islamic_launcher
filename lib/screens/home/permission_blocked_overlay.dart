@@ -49,12 +49,12 @@ class PermissionBlockedOverlay extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.all(24),
                           decoration: BoxDecoration(
-                            color: Colors.red.shade50,
+                            color: Colors.amber.shade50,
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
                             Icons.security_rounded,
-                            color: Colors.red.shade800,
+                            color: Colors.amber.shade800,
                             size: 64,
                           ),
                         ),
@@ -77,29 +77,192 @@ class PermissionBlockedOverlay extends StatelessWidget {
                             height: 1.5,
                           ),
                         ),
-                        const SizedBox(height: 48),
-                        _buildRepairButton(
-                          icon: Icons.tune_rounded,
-                          label: Translations.get(lang, 'open_setup_hub'),
-                          onTap: () {
-                            appState.setIgnorePermissionGuard(true);
-                            appState.navigatorKey.currentState?.push(
-                              AppPageRoute(child: const SetupHubScreen(isOnboarding: false)),
-                            ).then((_) => appState.setIgnorePermissionGuard(false));
-                          },
-                        ),
-                        if (!appState.isStrictActiveNow) ...[
-                          const SizedBox(height: 16),
-                          TextButton(
-                            onPressed: () {
-                              appState.setIgnorePermissionGuard(true);
-                            },
-                            child: Text(
-                              Translations.get(lang, 'continue_without_protection'),
-                              style: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
+                        const SizedBox(height: 24),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFECFDF5),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: const Color(0xFF34D399),
+                              width: 1.5,
                             ),
                           ),
-                        ],
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.shield_rounded,
+                                    color: Color(0xFF0D5C3A),
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    Translations.get(lang, 'standard_mode_title'),
+                                    style: const TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF064E3B),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Flexible(
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 3,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF0D5C3A),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Text(
+                                        Translations.get(
+                                          lang,
+                                          'standard_mode_badge',
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          fontSize: 9.5,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                Translations.get(lang, 'standard_mode_desc'),
+                                style: const TextStyle(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w500,
+                                  color: Color(0xFF065F46),
+                                  height: 1.4,
+                                ),
+                              ),
+                              const SizedBox(height: 14),
+                              _buildRepairButton(
+                                icon: isMissingAccess
+                                    ? Icons.accessibility_new_rounded
+                                    : Icons.tune_rounded,
+                                label: Translations.get(
+                                  lang,
+                                  isMissingAccess
+                                      ? 'reactivate_accessibility_btn'
+                                      : 'open_setup_hub',
+                                ),
+                                onTap: () {
+                                  appState.setIgnorePermissionGuard(true);
+                                  appState.navigatorKey.currentState
+                                      ?.push(
+                                        AppPageRoute(
+                                          child: const SetupHubScreen(
+                                            isOnboarding: false,
+                                          ),
+                                        ),
+                                      )
+                                      .then(
+                                        (_) => appState
+                                            .setIgnorePermissionGuard(false),
+                                      );
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFFBEB),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: Colors.amber.shade400,
+                              width: 1.5,
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Icon(
+                                    Icons.warning_amber_rounded,
+                                    color: Colors.amber.shade900,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      Translations.get(
+                                        lang,
+                                        'passive_mode_tradeoff_title',
+                                      ),
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFF78350F),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                Translations.get(lang, 'passive_mode_tradeoff'),
+                                style: const TextStyle(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF92400E),
+                                  height: 1.4,
+                                ),
+                              ),
+                              const SizedBox(height: 14),
+                              SizedBox(
+                                width: double.infinity,
+                                height: 48,
+                                child: ElevatedButton.icon(
+                                  onPressed: () async {
+                                    await appState.enablePassiveMode();
+                                  },
+                                  icon: const Icon(
+                                    Icons.shield_outlined,
+                                    size: 18,
+                                  ),
+                                  label: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    child: Text(
+                                      Translations.get(
+                                        lang,
+                                        'switch_to_passive_mode_btn',
+                                      ).toUpperCase(),
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 0.8,
+                                      ),
+                                    ),
+                                  ),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFFD97706),
+                                    foregroundColor: Colors.white,
+                                    elevation: 0,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -119,7 +282,7 @@ class PermissionBlockedOverlay extends StatelessWidget {
   }) {
     return Container(
       width: double.infinity,
-      constraints: const BoxConstraints(minHeight: 56),
+      constraints: const BoxConstraints(minHeight: 50),
       child: ElevatedButton.icon(
         onPressed: onTap,
         icon: Icon(icon, size: 20),
@@ -127,15 +290,15 @@ class PermissionBlockedOverlay extends StatelessWidget {
           fit: BoxFit.scaleDown,
           child: Text(
             label.toUpperCase(),
-            style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1),
+            style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.8),
           ),
         ),
         style: ElevatedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          backgroundColor: Colors.white,
-          foregroundColor: Colors.red.shade900,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+          backgroundColor: const Color(0xFF0D5C3A),
+          foregroundColor: Colors.white,
           elevation: 0,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       ),
     );

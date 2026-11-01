@@ -155,12 +155,73 @@ void main() {
       // Mode Ketat is removed
       expect(find.text('Mode Ketat'), findsNothing);
 
-      // Mode Pasif is present
-      final badge = find.text('SANGAT TIDAK DIREKOMENDASIKAN');
-      await tester.scrollUntilVisible(badge, 200);
+      // Mode Pasif is present without "SANGAT TIDAK DIREKOMENDASIKAN" badge
+      expect(find.text('SANGAT TIDAK DIREKOMENDASIKAN'), findsNothing);
+      final passiveTitle = find.text('Mode Pasif');
+      await tester.scrollUntilVisible(passiveTitle, 200);
       await tester.pumpAndSettle();
-      expect(badge, findsOneWidget);
-      expect(find.text('Mode Pasif'), findsOneWidget);
+      expect(passiveTitle, findsOneWidget);
+      expect(
+        find.textContaining('tidak mengizinkan layanan Aksesibilitas aktif sama sekali'),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining('TIDAK AKAN BERFUNGSI'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('PermissionBlockedOverlay shows 2 options (Re-enable Accessibility & Switch to Passive Mode with red trade-off) when Accessibility is disabled', (tester) async {
+      const channelBlock = MethodChannel('com.islamiclauncher/block');
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channelBlock, (call) async {
+        if (call.method == 'isAccessibilityServiceEnabled') return false;
+        return true;
+      });
+
+      SharedPreferences.setMockInitialValues({
+        'languageCode': 'id',
+        'hasCompletedOnboarding': true,
+        'launcher_mode': 'standard',
+      });
+      final prefs = await SharedPreferences.getInstance();
+      final appState = AppState(prefs);
+      appState.refreshStatus();
+      await tester.pump();
+
+      await tester.pumpWidget(
+        ChangeNotifierProvider<AppState>.value(
+          value: appState,
+          child: Consumer<AppState>(
+            builder: (context, state, _) => MaterialApp(
+              home: PermissionBlockedOverlay(
+                appState: state,
+                child: const Scaffold(body: Text('Home Content')),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Verify both choices and red trade-off explanation are visible
+      expect(find.text('Mode Standar'), findsOneWidget);
+      expect(find.text('DIREKOMENDASIKAN'), findsOneWidget);
+      expect(find.text('AKTIFKAN KEMBALI AKSESIBILITAS'), findsOneWidget);
+      expect(find.text('Konsekuensi Mode Pasif (Tanpa Aksesibilitas):'), findsOneWidget);
+      expect(find.textContaining('TIDAK AKAN BERFUNGSI'), findsOneWidget);
+
+      final switchBtn = find.text('PINDAH KE MODE PASIF');
+      await tester.scrollUntilVisible(switchBtn, 150);
+      await tester.pumpAndSettle();
+      expect(switchBtn, findsOneWidget);
+
+      // Tapping Switch to Passive Mode switches mode and dismisses the overlay
+      await tester.tap(switchBtn);
+      await tester.pumpAndSettle();
+
+      expect(appState.isPassiveMode, isTrue);
+      expect(find.text('PINDAH KE MODE PASIF'), findsNothing);
     });
 
     testWidgets('AccessibilityDisclosureDialog displays Google Play mandatory disclosure and returns user choice', (tester) async {
