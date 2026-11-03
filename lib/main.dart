@@ -242,19 +242,40 @@ class _HomeScreenSwitcher extends StatelessWidget {
       ),
       builder: (context, status, _) {
         if (!status.isReady) {
-          return const Scaffold(
-            backgroundColor: Color(0xFF052C28),
+          return Scaffold(
+            backgroundColor: const Color(0xFF083C25),
             body: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    Icons.mosque_rounded,
-                    size: 72,
-                    color: Color(0xFF34D399),
+                  Container(
+                    width: 112,
+                    height: 112,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(28),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.25),
+                          blurRadius: 24,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(28),
+                      child: Image.asset(
+                        'assets/app_logo.png',
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) => const Icon(
+                          Icons.mosque_rounded,
+                          size: 72,
+                          color: Color(0xFF34D399),
+                        ),
+                      ),
+                    ),
                   ),
-                  SizedBox(height: 24),
-                  CircularProgressIndicator(color: Color(0xFF34D399)),
+                  const SizedBox(height: 24),
+                  const CircularProgressIndicator(color: Color(0xFF34D399)),
                 ],
               ),
             ),

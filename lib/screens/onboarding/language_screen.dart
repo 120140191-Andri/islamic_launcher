@@ -77,22 +77,32 @@ class _LanguageScreenState extends State<LanguageScreen> {
                     children: [
                       const SizedBox(height: 16),
                       Container(
-                        padding: const EdgeInsets.all(20),
+                        width: 96,
+                        height: 96,
                         decoration: BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
+                          color: const Color(0xFF083C25),
+                          borderRadius: BorderRadius.circular(24),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.05),
+                              color: const Color(
+                                0xFF0D5C3A,
+                              ).withValues(alpha: 0.22),
                               blurRadius: 20,
                               offset: const Offset(0, 10),
                             ),
                           ],
                         ),
-                        child: Icon(
-                          Icons.language_rounded,
-                          size: 56,
-                          color: Colors.teal.shade800,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(24),
+                          child: Image.asset(
+                            'assets/app_logo.png',
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, _, _) => Icon(
+                              Icons.language_rounded,
+                              size: 48,
+                              color: Colors.teal.shade100,
+                            ),
+                          ),
                         ),
                       ),
                       const SizedBox(height: 24),

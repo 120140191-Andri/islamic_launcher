@@ -59,10 +59,12 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   flutter_launcher_icons: ^0.13.1
 
-flutter_icons:
+flutter_launcher_icons:
   android: "launcher_icon"
   ios: false
-  image_path: "assets/Logos Islamic Launcher Cropped.png"
+  image_path: "assets/app_logo.png"
+  adaptive_icon_background: "#083C25"
+  adaptive_icon_foreground: "assets/app_logo.png"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -79,6 +81,7 @@ flutter:
   assets:
     - assets/quran.json
     - assets/hadiths.json
+    - assets/app_logo.png
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see

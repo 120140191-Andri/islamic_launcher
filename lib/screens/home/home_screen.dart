@@ -1388,15 +1388,33 @@ class _HomeScreenState extends State<HomeScreen>
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            padding: const EdgeInsets.all(24),
+            width: 112,
+            height: 112,
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(
+                color: Colors.amber.withValues(alpha: 0.35),
+                width: 2,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.25),
+                  blurRadius: 24,
+                  offset: const Offset(0, 8),
+                ),
+              ],
             ),
-            child: const Icon(
-              Icons.auto_awesome_rounded,
-              color: Colors.white,
-              size: 64,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(26),
+              child: Image.asset(
+                'assets/app_logo.png',
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => const Icon(
+                  Icons.auto_awesome_rounded,
+                  color: Colors.white,
+                  size: 64,
+                ),
+              ),
             ),
           ),
           const SizedBox(height: 32),
